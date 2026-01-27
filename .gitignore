@@ -16,3 +16,6 @@ Thumbs.db
 # Production Builds
 dist/
 build/
+
+# IDE Files
+.vscode/
