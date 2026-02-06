@@ -4,7 +4,7 @@ import jwt from "jsonwebtoken";
 import { JWT_SECRET, JWT_REFRESH_SECRET } from "../config/env.js";
 
 export async function hashPassword(password) {
-    const salt = await bcrypt.genSalt(10);
+    const salt = await bcrypt.genSalt(12);
     return await bcrypt.hash(password, salt);
 }
 
