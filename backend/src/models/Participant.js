@@ -12,17 +12,17 @@ const Participant = User.discriminator(
             type: String,
             required: true,
         },
-        participantType: {
-            type: String,
-            enum: ["IIIT", "NON_IIIT"],
-            required: true,
-        },
         collegeOrOrg: {
             type: String,
             required: true,
         },
         phone: {
             type: String,
+            required: true,
+        },
+        participantType: {
+            type: String,
+            enum: ["IIIT", "NON_IIIT"],
             required: true,
         },
         interests: [String],
