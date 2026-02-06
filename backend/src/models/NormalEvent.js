@@ -1,7 +1,7 @@
 import mongoose from "mongoose";
 import Event from "./Event.js";
 
-const NormalEvent = Event.Discriminator(
+const NormalEvent = Event.discriminator(
     "Normal",
     new mongoose.Schema({
         registrationFee: {

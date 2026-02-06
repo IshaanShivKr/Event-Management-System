@@ -11,7 +11,7 @@ const eventSchema = new mongoose.Schema({
         type: String,
         required: true,
     },
-    descripiton: {
+    description: {
         type: String,
         required: true,
     },
@@ -22,13 +22,13 @@ const eventSchema = new mongoose.Schema({
     },
     status: {
         type: String,
-        enum: ["Draft", "Published", "Ongoing", "Closed"],
+        enum: ["Draft", "Published", "Ongoing", "Completed", "Closed"],
         default: "Draft",
     },
     eligibility: {
         type: String,
         enum: ["IIIT", "NON_IIIT", "ALL"],
-        required: "true",
+        required: true,
     },
     registrationDeadline: {
         type: Date,
@@ -51,5 +51,5 @@ const eventSchema = new mongoose.Schema({
     },
 }, baseOptions);
 
-const Event = mongoose.Model("Event", eventSchema);
+const Event = mongoose.model("Event", eventSchema);
 export default Event;

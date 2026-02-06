@@ -21,6 +21,10 @@ const Organizer = User.discriminator(
             type: String,
             required: true
         },
+        phone: {
+            type: String,
+            required: true,
+        },
     })
 )
 

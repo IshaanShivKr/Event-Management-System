@@ -1,7 +1,7 @@
 import mongoose from "mongoose";
-import Event from "./Event";
+import Event from "./Event.js";
 
-const MerchandiseEvent = Event.Discriminator(
+const MerchandiseEvent = Event.discriminator(
     "Merchandise",
     new mongoose.Schema({
         itemDetails: {
