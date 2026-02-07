@@ -1,82 +1,61 @@
 import Event from "../models/Event.js";
 import NormalEvent from "../models/NormalEvent.js";
 import MerchandiseEvent from "../models/MerchandiseEvent.js";
+import { sendSuccess, sendError } from "../utils/responseHandler.js";
 
 export async function createEvent(req, res) {
     try {
-        const {
-            eventType,
-            ...eventData
-        } = req.body;
+        const { eventType, ...eventData } = req.body;
         const organizerId = req.user.id;
 
         let newEvent;
 
         if (eventType === "Normal") {
-            newEvent = new NormalEvent({
-                ...eventData,
-                organizerId,
-            });
+            newEvent = new NormalEvent({ ...eventData, organizerId, });
         } else if (eventType === "Merchandise") {
-            newEvent = new MerchandiseEvent({
-                ...eventData,
-                organizerId,
-            });
+            newEvent = new MerchandiseEvent({ ...eventData, organizerId, });
         } else {
-            return res.status(400).json({
-                message: "Invalid event type",
-            })
+            return sendError(res, "Invalid event type", "INVALID_EVENT_TYPE", 400);
         }
 
         await newEvent.save();
-        res.status(201).json({
-            message: `${eventType} event created successfully`,
-            event: newEvent,
-        });
+        return sendSuccess(res, `${eventType} event created successfully`, newEvent, 201);
 
     } catch (error) {
-        res.status(500).json({
-            message: "Failed to create event",
-            error: error.message,
-        });
+        return sendError(res, "Failed to create event", error.message, 500);
     }
 }
 
 export async function getAllEvents(req, res) {
     try {
         const events = await Event.find().populate("organizerId", "organizerName category contactEmail");
-        res.status(200).json(events);
+        return sendSuccess(res, "Events fetched successfully", events, 200);
 
     } catch (error) {
-        res.status(500).json({
-            message: "Failed to fetch events",
-            error: error.message,
-        });
+        return sendError(res, "Failed to fetch events", error.message, 500);
     }
 }
 
 export async function getEventById(req, res) {
     try {
         const event = await Event.findById(req.params.id).populate("organizerId", "organizerName category description contactEmail phone");
-        res.status(200).json(event);
+        if (!event) {
+            return sendError(res, "Event not found", "EVENT_NOT_FOUND", 404);
+        }
+
+        return sendSuccess(res, "Event details fetched successfully", event);
 
     } catch (error) {
-        res.status(500).json({
-            message: "Failed to fetch event",
-            error: error.message,
-        });
+        return sendError(res, "Failed to fetch event", error.message, 500);
     }
 }
 
 export async function getMyEvents(req, res) {
     try {
         const events = await Event.find({ organizerId: req.user.id });
-        res.status(200).json(events);
+        return sendSuccess(res, "Your events fetched successfully", events);
 
     } catch (error) {
-        res.status(500).json({
-            message: "Failed to fetch events",
-            error: error.message,
-        });
+        return sendError(res, "Failed to fetch your events", error.message, 500);
     }
 }

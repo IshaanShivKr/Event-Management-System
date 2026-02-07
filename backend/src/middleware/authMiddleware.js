@@ -1,6 +1,7 @@
 import jwt from "jsonwebtoken";
 import { JWT_SECRET, } from "../config/env.js";
 import User from "../models/User.js";
+import { sendError } from "../utils/responseHandler.js";
 
 export async function protect(req, res, next) {
     let token;
@@ -11,32 +12,30 @@ export async function protect(req, res, next) {
             const decoded = jwt.verify(token, JWT_SECRET);
             req.user = await User.findById(decoded.id).select("-password");
             if (!req.user) {
-                return res.status(401).json({
-                    message: "User no longer exists",
-                });
+                return sendError(res, "The user belonging to this token no longer exists.", "USER_NOT_FOUND", 401);
             }
             return next();
 
         } catch (error) {
-            return res.status(401).json({
-                message: "Not authorized, token failed",
-            });
+            const errorCode = error.name === "TokenExpiredError" ? "TOKEN_EXPIRED" : "INVALID_TOKEN";
+            return sendError(res, "Not authorized, token failed.", errorCode, 401);
         }
     }
 
     if (!token) {
-        res.status(401).json({
-            message: "Not authorized, no token",
-        });
+        return sendError(res, "Not authorized, no token provided.", "MISSING_TOKEN", 401);
     }
 }
 
 export function authorize(...roles) {
     return function (req, res, next) {
         if (!req.user || !roles.includes(req.user.role)) {
-            return res.status(403).json({ 
-                message: `Role (${req.user?.role}) is not authorized to access this resource` 
-            });
+            return sendError(
+                res, 
+                `Role (${req.user?.role || "Unknown"}) is not authorized to access this resource.`, 
+                "FORBIDDEN_ROLE", 
+                403
+            );
         }
         next();
     }
