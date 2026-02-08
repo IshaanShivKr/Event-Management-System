@@ -22,7 +22,7 @@ export async function generateToken(user) {
         },
         JWT_SECRET,
         {
-            expiresIn: JWT_ACCESS_EXPIRATION || "15m",
+            expiresIn: JWT_ACCESS_EXPIRATION,
         },
     );
 }
@@ -34,7 +34,7 @@ export async function generateRefreshToken(user) {
         },
         JWT_REFRESH_SECRET,
         {
-            expiresIn: JWT_REFRESH_EXPIRATION || "7d",
+            expiresIn: JWT_REFRESH_EXPIRATION,
         },
     );
 }
