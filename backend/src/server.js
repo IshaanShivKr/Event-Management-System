@@ -22,7 +22,7 @@ app.use("/api/events", eventRoutes);
 app.use("/api/registrations", registrationRoutes);
 app.use("/api/users", userRoutes);
 
-app.all("*", (req, res) => {
+app.all("*path", (req, res) => {
     return sendError(res, `Can't find ${req.originalUrl} on this server!`, "ROUTE_NOT_FOUND", 404);
 });
 
