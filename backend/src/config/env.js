@@ -19,3 +19,6 @@ export const JWT_REFRESH_SECRET = process.env.JWT_REFRESH_SECRET;
 if (!JWT_REFRESH_SECRET) {
     throw new Error("Missing JWT_REFRESH_SECRET");
 }
+
+export const JWT_ACCESS_EXPIRATION = process.env.JWT_ACCESS_EXPIRATION;
+export const JWT_REFRESH_EXPIRATION = process.env.JWT_REFRESH_EXPIRATION;

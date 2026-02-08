@@ -14,15 +14,14 @@ export async function createOrganizer(req, res) {
 
         const hashedPassword = await hashPassword(password);
 
-        const newOrganizer = new Organizer({ email, password: hashedPassword, organizerName, category, description, contactEmail, phone, role: "Organizer" });
+        const newOrganizer = new Organizer({ email, password: hashedPassword, organizerName, category, description, contactEmail, phone });
 
         await newOrganizer.save();
 
-        return sendSuccess(res, "Organizer created successfully", {
-            id: newOrganizer._id,
-            name: newOrganizer.organizerName,
-            category: newOrganizer.category,
-        }, 201);
+        const organizerResponse = newOrganizer.toObject();
+        delete organizerResponse.password;
+
+        return sendSuccess(res, "Organizer created successfully", organizerResponse, 201);
 
     } catch (error) {
         return sendError(res, "Failed to create organizer", error.message, 500);

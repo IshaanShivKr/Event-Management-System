@@ -1,7 +1,7 @@
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
 
-import { JWT_SECRET, JWT_REFRESH_SECRET } from "../config/env.js";
+import { JWT_SECRET, JWT_REFRESH_SECRET, JWT_ACCESS_EXPIRATION, JWT_REFRESH_EXPIRATION } from "../config/env.js";
 
 export async function hashPassword(password) {
     const salt = await bcrypt.genSalt(12);
@@ -20,7 +20,7 @@ export async function generateToken(user) {
         },
         JWT_SECRET,
         {
-            expiresIn: "15m",
+            expiresIn: JWT_ACCESS_EXPIRATION,
         },
     );
 }
@@ -32,7 +32,7 @@ export async function generateRefreshToken(user) {
         },
         JWT_REFRESH_SECRET,
         {
-            expiresIn: "7d",
+            expiresIn: JWT_REFRESH_EXPIRATION,
         },
     );
 }
