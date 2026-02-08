@@ -13,14 +13,16 @@ export async function comparePasswords(password, hashedPassword) {
 }
 
 export async function generateToken(user) {
+    const role = user.role || (user.constructor.modelName === 'User' ? 'User' : user.constructor.modelName);
+
     return jwt.sign(
         {
-            id: user._id,
-            role: user.role,
+            id: user._id.toString(),
+            role: role,
         },
         JWT_SECRET,
         {
-            expiresIn: JWT_ACCESS_EXPIRATION,
+            expiresIn: JWT_ACCESS_EXPIRATION || "15m",
         },
     );
 }
@@ -32,11 +34,15 @@ export async function generateRefreshToken(user) {
         },
         JWT_REFRESH_SECRET,
         {
-            expiresIn: JWT_REFRESH_EXPIRATION,
+            expiresIn: JWT_REFRESH_EXPIRATION || "7d",
         },
     );
 }
 
 export function verifyRefreshToken(token) {
-    return jwt.verify(token, JWT_REFRESH_SECRET);
+    try {
+        return jwt.verify(token, JWT_REFRESH_SECRET);
+    } catch (error) {
+        return null; 
+    }
 }
