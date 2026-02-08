@@ -11,9 +11,11 @@ export async function createEvent(req, res) {
         let newEvent;
 
         if (eventType === "Normal") {
-            newEvent = new NormalEvent({ ...eventData, organizerId, });
+            const { name, description, eligibility, registrationDeadline, eventStartDate, eventEndDate, registrationLimit, eventTags, registrationFee, customFormFields } = eventData;
+            newEvent = new NormalEvent({ name, description, eligibility, registrationDeadline, eventStartDate, eventEndDate, registrationLimit, eventTags, registrationFee, customFormFields, organizerId });
         } else if (eventType === "Merchandise") {
-            newEvent = new MerchandiseEvent({ ...eventData, organizerId, });
+            const { name, description, eligibility, registrationDeadline, eventStartDate, eventEndDate, registrationLimit, eventTags, itemDetails, price, stockQuantity, purchaseLimit } = eventData;
+            newEvent = new MerchandiseEvent({ name, description, eligibility, registrationDeadline, eventStartDate, eventEndDate, registrationLimit, eventTags, itemDetails, price, stockQuantity, purchaseLimit, organizerId });
         } else {
             return sendError(res, "Invalid event type", "INVALID_EVENT_TYPE", 400);
         }
@@ -28,7 +30,7 @@ export async function createEvent(req, res) {
 
 export async function getAllEvents(req, res) {
     try {
-        const events = await Event.find().populate("organizerId", "organizerName category contactEmail");
+        const events = await Event.find({ status: { $in: ["Published", "Ongoing"] } }).populate("organizerId", "organizerName category contactEmail");
         return sendSuccess(res, "Events fetched successfully", events, 200);
 
     } catch (error) {

@@ -29,7 +29,7 @@ export async function protect(req, res, next) {
 
 export function authorize(...roles) {
     return function (req, res, next) {
-        if (!req.user || !roles.includes(req.user.role)) {
+        if (!req.user || !req.user.role || !roles.includes(req.user.role)) {
             return sendError(
                 res, 
                 `Role (${req.user?.role || "Unknown"}) is not authorized to access this resource.`, 

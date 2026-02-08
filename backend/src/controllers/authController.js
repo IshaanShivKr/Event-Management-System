@@ -32,6 +32,9 @@ export async function registerParticipant(req, res) {
         }, 201);
     
     } catch (error) {
+        if (error.code === 11000) {
+            return sendError(res, "Email already registered.", "EMAIL_EXISTS", 400);
+        }
         return sendError(res, "Registration failed", error.message, 500);
     }
 }

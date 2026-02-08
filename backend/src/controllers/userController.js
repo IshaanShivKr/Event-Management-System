@@ -15,29 +15,31 @@ export async function getMe(req, res) {
 
 export async function updateProfile(req, res) {
     try {
-        const { role } = req.user;
+        const { role, id } = req.user;
         let updateData = {};
+        let Model = User;
 
         if (role === "Participant") {
             const { firstName, lastName, phone, interests } = req.body;
             updateData = { firstName, lastName, phone, interests };
+            Model = Participant;
         } else if (role === "Organizer") {
             const { organizerName, description, phone, contactEmail } = req.body;
             updateData = { organizerName, description, phone, contactEmail };
+            Model = Organizer;
         } else {
-            return sendError(res, "This role cannot update profile fields via this route.", "UNAUTHORIZED_ROLE", 403);
+            return sendError(res, "Unauthorized role update", "UNAUTHORIZED_ROLE", 403);
         }
 
         Object.keys(updateData).forEach(key => updateData[key] === undefined && delete updateData[key]);
 
-        const updatedUser = await User.findByIdAndUpdate(
-            req.user.id,
+        const updatedUser = await Model.findByIdAndUpdate(
+            id,
             { $set: updateData },
             { new: true, runValidators: true }
         ).select("-password");
 
         return sendSuccess(res, "Profile updated successfully", updatedUser);
-
     } catch (error) {
         return sendError(res, "Update failed", error.message, 500);
     }
