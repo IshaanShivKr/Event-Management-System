@@ -12,18 +12,23 @@ export async function registerForEvent(req, res) {
     try {
         const { eventId, responses, selections, quantity = 1 } = req.body;
         const participantId = req.user.id;
-        const participantType = req.user.participantType;
 
-        const event = await Event.findById(eventId).lean();
+        // Fetch within session to ensure data consistency
+        const event = await Event.findById(eventId).session(session).lean();
         if (!event) {
+            await session.abortTransaction();
             return sendError(res, "Event not found", "EVENT_NOT_FOUND", 404);
         }
 
-        if (event.eligibility !== "ALL" && event.eligibility != req.user.participantType) {
+        // Eligibility check
+        if (event.eligibility !== "ALL" && event.eligibility !== req.user.participantType) {
+            await session.abortTransaction();
             return sendError(res, "You are not eligible for this event", "INELIGIBLE_PARTICIPANT", 403);
         }
 
+        // Deadline check
         if (new Date() > new Date(event.registrationDeadline)) {
+            await session.abortTransaction();
             return sendError(res, "Registration deadline passed", "DEADLINE_PASSED", 400);
         }
 
@@ -31,16 +36,15 @@ export async function registerForEvent(req, res) {
             const currentRegs = await Registration.countDocuments({ eventId }).session(session);
 
             if (currentRegs >= event.registrationLimit) {
+                await session.abortTransaction();
                 return sendError(res, "Event registration limit reached.", "CAPACITY_REACHED", 400);
             }
+            
             if (currentRegs === 0) {
-                await NormalEvent.findByIdAndUpdate(eventId, { formLocked: true });
+                await NormalEvent.findByIdAndUpdate(eventId, { formLocked: true }).session(session);
             }
         } else {
-            if (event.stockQuantity < quantity) {
-                return sendError(res, "Out of stock", "STOCK_EXHAUSTED", 400);
-            }
-
+            // Merchandise Logic
             const updatedMerch = await MerchandiseEvent.findOneAndUpdate(
                 { _id: eventId, stockQuantity: { $gte: quantity } },
                 { $inc: { stockQuantity: -quantity } },
@@ -48,13 +52,17 @@ export async function registerForEvent(req, res) {
             );
 
             if (!updatedMerch) {
-                return sendError(res, "Stock depleted", "STOCK_EXHAUSTED", 400);
+                await session.abortTransaction();
+                return sendError(res, "Stock depleted or insufficient quantity.", "STOCK_EXHAUSTED", 400);
             }
         }
 
         const registration = new Registration({ 
-            ...req.body, 
-            participantId: req.user.id,
+            eventId,
+            participantId,
+            responses: event.eventType === "Normal" ? responses : undefined,
+            selections: event.eventType === "Merchandise" ? selections : undefined,
+            quantity: event.eventType === "Merchandise" ? quantity : 1,
             paymentStatus: (event.price && event.price > 0) ? "Pending" : "N/A"
         });
 
