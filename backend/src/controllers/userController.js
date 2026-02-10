@@ -1,4 +1,6 @@
 import User from "../models/User.js";
+import Participant from "../models/Participant.js";
+import Organizer from "../models/Organizer.js";
 import { sendSuccess, sendError } from "../utils/responseHandler.js";
 
 export async function getMe(req, res) {
