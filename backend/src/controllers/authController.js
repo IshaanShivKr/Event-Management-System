@@ -69,7 +69,7 @@ export async function refreshToken(req, res) {
         const decoded = verifyRefreshToken(token);
         const user = await User.findById(decoded.id);
         if (!user) {
-            return sendError(res, "User no longer exists", "USER_NOT_FOUND", 404);
+            return sendError(res, "User no longer exists", "NOT_FOUND", 404);
         }
 
         const newAccessToken = await generateToken(user);

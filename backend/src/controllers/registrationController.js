@@ -13,20 +13,22 @@ export async function registerForEvent(req, res) {
         const { eventId, responses, selections, quantity = 1 } = req.body;
         const participantId = req.user.id;
 
-        // Fetch within session to ensure data consistency
         const event = await Event.findById(eventId).session(session).lean();
         if (!event) {
             await session.abortTransaction();
-            return sendError(res, "Event not found", "EVENT_NOT_FOUND", 404);
+            return sendError(res, "Event not found", "NOT_FOUND", 404);
         }
 
-        // Eligibility check
+        if (event.status !== "Published") {
+            await session.abortTransaction();
+            return sendError(res, `Registrations are currently ${event.status.toLowerCase()}`, "REGISTRATION_UNAVAILABLE", 400);
+        }
+
         if (event.eligibility !== "ALL" && event.eligibility !== req.user.participantType) {
             await session.abortTransaction();
             return sendError(res, "You are not eligible for this event", "INELIGIBLE_PARTICIPANT", 403);
         }
 
-        // Deadline check
         if (new Date() > new Date(event.registrationDeadline)) {
             await session.abortTransaction();
             return sendError(res, "Registration deadline passed", "DEADLINE_PASSED", 400);
@@ -44,7 +46,6 @@ export async function registerForEvent(req, res) {
                 await NormalEvent.findByIdAndUpdate(eventId, { formLocked: true }).session(session);
             }
         } else {
-            // Merchandise Logic
             const updatedMerch = await MerchandiseEvent.findOneAndUpdate(
                 { _id: eventId, stockQuantity: { $gte: quantity } },
                 { $inc: { stockQuantity: -quantity } },

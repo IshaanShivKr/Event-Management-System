@@ -42,10 +42,10 @@ export async function getEventById(req, res) {
     try {
         const event = await Event.findById(req.params.id).populate("organizerId", "organizerName category description contactEmail phone");
         if (!event) {
-            return sendError(res, "Event not found", "EVENT_NOT_FOUND", 404);
+            return sendError(res, "Event not found", "NOT_FOUND", 404);
         }
 
-        return sendSuccess(res, "Event details fetched successfully", event);
+        return sendSuccess(res, "Event details fetched successfully", event, 200);
 
     } catch (error) {
         return sendError(res, "Failed to fetch event", error.message, 500);
@@ -59,5 +59,85 @@ export async function getMyEvents(req, res) {
 
     } catch (error) {
         return sendError(res, "Failed to fetch your events", error.message, 500);
+    }
+}
+
+export async function updateEventStatus(req, res) {
+    try {
+        const { status } = req.body;
+        const eventId = req.params.id;
+
+        const event = await Event.findById(eventId);
+        if (!event) {
+            return sendError(res, "Event not found", "NOT_FOUND", 404);
+        }
+
+        if (event.organizerId.toString() !== req.user.id) {
+            return sendError(res, "Unauthorized: You do not own this event", "UNAUTHORIZED", 403);
+        }
+
+        if (event.status !== "Draft" && status === "Draft") {
+            return sendError(res, "Cannot revert a published event to draft", "INVALID_TRANSITION", 400);
+        }
+
+        event.status = status;
+        await event.save();
+
+        return sendSuccess(res, `Event status updated to ${status}`, event, 200);
+
+    } catch (error) {
+        return sendError(res, "Update status failed", error.message, 500);
+    }
+}
+
+export async function updateEvent(req, res) {
+    try {
+        const { updates } = req.body;
+        const eventId = req.params.id;
+
+        const event = await Event.findById(eventId);
+        if (!event) {
+            return sendError(res, "Event not found", "NOT_FOUND", 404);
+        }
+
+        if (event.organizerId.toString() !== req.user.id) {
+            return sendError(res, "Unauthorized", "UNAUTHORIZED", 403);
+        }
+
+        if (event.formLocked && updates.customFormFields) {
+            return sendError(res, "Cannot edit form fields after registrations have started", "FORM_LOCKED", 400);
+        }
+
+        const updatedEvent = await Event.findByIdAndUpdate(eventId, updates, { new: true, runValidators: true });
+        return sendSuccess(res, "Event updated successfully", updatedEvent);
+
+    } catch (error) {
+        return sendError(res, "Update failed", error.message, 500);
+    }
+}
+
+export async function deleteEvent(req, res) {
+    try {
+        const eventId = req.params.id;
+
+        const event = await Event.findById(eventId);
+        if (!event) {
+            return sendError(res, "Event not found", "NOT_FOUND", 404);
+        }
+
+        if (event.organizerId.toString() !== req.user.id) {
+            return sendError(res, "Unauthorized", "UNAUTHORIZED", 403);
+        }
+
+        const registrationCount = await mongoose.model("Registration").countDocuments({ eventId });
+        if (registrationCount > 0) {
+            return sendError(res, "Cannot delete event with active registrations. Cancel them first.", "HAS_REGISTRATIONS", 400);
+        }
+
+        await Event.findByIdAndDelete(eventId);
+        return sendSuccess(res, "Event deleted successfully", null);
+
+    } catch (error) {
+        return sendError(res, "Deletion failed", error.message, 500);
     }
 }

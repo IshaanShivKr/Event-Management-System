@@ -4,6 +4,17 @@ import { protect, authorize } from "../middleware/authMiddleware.js";
 
 const adminRoutes = express.Router();
 
-adminRoutes.post("/create-organizer", protect, authorize("Admin"), createOrganizer);
+adminRoutes.use(protect, authorize("Admin"));
+
+adminRoutes.post("/create-organizer", createOrganizer);
+adminRoutes.get("/organizers", getAllOrganizers);
+adminRoutes.get("/organizers/:id", getOrganizerById);
+
+adminRoutes.get("/participants", getAllParticipants);
+adminRoutes.get("/participants/:id", getParticipantById);
+
+adminRoutes.get("/events", getAllSystemEvents);
+
+adminRoutes.delete("/users/:id", deleteUser);
 
 export default adminRoutes;

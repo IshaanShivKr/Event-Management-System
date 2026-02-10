@@ -6,7 +6,7 @@ import { sendSuccess, sendError } from "../utils/responseHandler.js";
 export async function getMe(req, res) {
     try {
         if (!req.user) {
-            return sendError(res, "User not found", "USER_NOT_FOUND", 404);
+            return sendError(res, "User not found", "NOT_FOUND", 404);
         }
         return sendSuccess(res, "User profile fetched", req.user);
 

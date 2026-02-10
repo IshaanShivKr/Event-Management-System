@@ -12,7 +12,7 @@ export async function protect(req, res, next) {
             const decoded = jwt.verify(token, JWT_SECRET);
             req.user = await User.findById(decoded.id).select("-password");
             if (!req.user) {
-                return sendError(res, "The user belonging to this token no longer exists.", "USER_NOT_FOUND", 401);
+                return sendError(res, "The user belonging to this token no longer exists.", "NOT_FOUND", 401);
             }
             return next();
 
