@@ -1,5 +1,13 @@
 import express from "express";
-import { createOrganizer } from "../controllers/adminController.js";
+import {
+    createOrganizer,
+    getAllOrganizers,
+    getOrganizerById,
+    getAllParticipants,
+    getParticipantById,
+    getAllSystemEvents,
+    deleteUser
+} from "../controllers/adminController.js";
 import { protect, authorize } from "../middleware/authMiddleware.js";
 
 const adminRoutes = express.Router();
