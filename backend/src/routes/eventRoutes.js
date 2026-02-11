@@ -18,7 +18,7 @@ eventRoutes.get("/:id", getEventById);
 
 eventRoutes.post("/create", protect, authorize("Organizer"), createEvent);
 
-eventRoutes.patch("/:id/status", protect, authorize("Organize"), updateEventStatus);
+eventRoutes.patch("/:id/status", protect, authorize("Organizer"), updateEventStatus);
 
 eventRoutes.put("/:id", protect, authorize("Organizer"), updateEvent);
 
