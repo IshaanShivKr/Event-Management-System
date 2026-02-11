@@ -1,7 +1,7 @@
 import express from "express";
 import {
     registerForEvent,
-    getMyRegistraions,
+    getMyRegistrations,
     getRegistrationById,
     getEventAttendees,
     cancelRegistration
@@ -12,7 +12,7 @@ const registrationRoutes = express.Router();
 
 registrationRoutes.post("/register", protect, authorize("Participant"), registerForEvent);
 
-registrationRoutes.get("/my-history", protect, authorize("Participant", getMyRegistraions));
+registrationRoutes.get("/my-history", protect, authorize("Participant", getMyRegistrations));
 registrationRoutes.get("/:id", protect, authorize("Participant"), getRegistrationById);
 registrationRoutes.get("/event/:id", protect, authorize("Organizer"), getEventAttendees);
 

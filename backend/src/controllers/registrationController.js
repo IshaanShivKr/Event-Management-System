@@ -82,7 +82,7 @@ export async function registerForEvent(req, res) {
     }
 }
 
-export async function getMyRegistraions(req, res) {
+export async function getMyRegistrations(req, res) {
     try {
         const registrations = await Registration.find({ participantId: req.user.id })
                                         .populate("eventId", "name eventStartDate eventEndDate status eventType")
