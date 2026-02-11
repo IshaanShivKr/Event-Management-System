@@ -18,6 +18,20 @@ const userSchema = new mongoose.Schema({
         type: String,
         required: true,
     },
+    // Password reset/request fields
+    resetRequested: {
+        type: Boolean,
+        default: false,
+    },
+    resetReason: {
+        type: String,
+    },
+    resetToken: {
+        type: String,
+    },
+    resetExpires: {
+        type: Date,
+    },
 }, baseOptions);
 
 const User = mongoose.model("User", userSchema);

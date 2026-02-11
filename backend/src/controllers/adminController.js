@@ -26,6 +26,9 @@ export async function createOrganizer(req, res) {
         return sendSuccess(res, "Organizer created successfully", organizerResponse, 201);
 
     } catch (error) {
+        if (error.code === 11000) {
+            return sendError(res, "Email already registered", "EMAIL_EXISTS", 400);
+        }
         return sendError(res, "Failed to create organizer", error.message, 500);
     }
 }

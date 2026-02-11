@@ -67,6 +67,10 @@ export async function refreshToken(req, res) {
 
     try {
         const decoded = verifyRefreshToken(token);
+        if (!decoded) {
+            return sendError(res, "Invalid or expired refresh token", "INVALID_REFRESH", 403);
+        }
+
         const user = await User.findById(decoded.id);
         if (!user) {
             return sendError(res, "User no longer exists", "NOT_FOUND", 404);

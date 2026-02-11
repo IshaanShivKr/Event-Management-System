@@ -30,7 +30,7 @@ export async function generateToken(user) {
 export async function generateRefreshToken(user) {
     return jwt.sign(
         {
-            id: user._id,
+            id: user._id.toString(),
         },
         JWT_REFRESH_SECRET,
         {

@@ -58,13 +58,15 @@ export async function registerForEvent(req, res) {
             }
         }
 
+        const price = event.price ?? event.registrationFee ?? 0;
+
         const registration = new Registration({ 
             eventId,
             participantId,
             responses: event.eventType === "Normal" ? responses : undefined,
             selections: event.eventType === "Merchandise" ? selections : undefined,
             quantity: event.eventType === "Merchandise" ? quantity : 1,
-            paymentStatus: (event.price && event.price > 0) ? "Pending" : "N/A"
+            paymentStatus: price > 0 ? "Pending" : "N/A"
         });
 
         await registration.save({ session });
@@ -143,7 +145,7 @@ export async function cancelRegistration(req, res) {
         const registrationId = req.params.id;
         const participantId = req.user.id;
 
-        const registration = await Registration.findOne({ _id: registrationId, participantId });
+        const registration = await Registration.findOne({ _id: registrationId, participantId }).populate("eventId");
         if (!registration) {
             await session.abortTransaction();
             return sendError(res, "Registration not found", "NOT_FOUND", 404);

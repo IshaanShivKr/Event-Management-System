@@ -1,5 +1,6 @@
 import mongoose from "mongoose";
 import Event from "../models/Event.js";
+import Registration from "../models/Registration.js";
 import NormalEvent from "../models/NormalEvent.js";
 import MerchandiseEvent from "../models/MerchandiseEvent.js";
 import { sendSuccess, sendError } from "../utils/responseHandler.js";
@@ -109,7 +110,31 @@ export async function updateEvent(req, res) {
             return sendError(res, "Cannot edit form fields after registrations have started", "FORM_LOCKED", 400);
         }
 
-        const updatedEvent = await Event.findByIdAndUpdate(eventId, updates, { new: true, runValidators: true });
+        // Whitelist allowed update fields to prevent changing protected properties
+        const allowedFields = new Set([
+            "name",
+            "description",
+            "eligibility",
+            "registrationDeadline",
+            "eventStartDate",
+            "eventEndDate",
+            "registrationLimit",
+            "eventTags",
+            "registrationFee",
+            "customFormFields",
+            // merchandise fields
+            "itemDetails",
+            "price",
+            "stockQuantity",
+            "purchaseLimit",
+        ]);
+
+        const sanitized = {};
+        Object.keys(updates || {}).forEach((k) => {
+            if (allowedFields.has(k)) sanitized[k] = updates[k];
+        });
+
+        const updatedEvent = await Event.findByIdAndUpdate(eventId, sanitized, { new: true, runValidators: true });
         return sendSuccess(res, "Event updated successfully", updatedEvent);
 
     } catch (error) {
