@@ -33,29 +33,6 @@ export async function createOrganizer(req, res) {
     }
 }
 
-export async function getAllOrganizers(req, res) {
-    try {
-        const organizers = await Organizer.find().select("-password");
-        return sendSuccess(res, "All organizers fetched", organizers, 200);
-
-    } catch (error) {
-        return sendError(res, "Failed to fetch organizers", error.message, 500);
-    }
-}
-
-export async function getOrganizerById(req, res) {
-    try {
-        const organizer = await Organizer.findById(req.params.id).select("-password");
-        if (!organizer) {
-            return sendError(res, "Organizer not found", "NOT_FOUND", 404);
-        }
-        return sendSuccess(res, "Organizer details fetched", organizer, 200);
-
-    } catch (error) {
-        return sendError(res, "Error fetching organizer", error.message, 500);
-    }
-}
-
 export async function getAllParticipants(req, res) {
     try {
         const participants = await Participant.find().select("-password");

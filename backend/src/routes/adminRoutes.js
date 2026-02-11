@@ -1,8 +1,6 @@
 import express from "express";
 import {
     createOrganizer,
-    getAllOrganizers,
-    getOrganizerById,
     getAllParticipants,
     getParticipantById,
     getAllSystemEvents,
@@ -15,8 +13,6 @@ const adminRoutes = express.Router();
 adminRoutes.use(protect, authorize("Admin"));
 
 adminRoutes.post("/create-organizer", createOrganizer);
-adminRoutes.get("/organizers", getAllOrganizers);
-adminRoutes.get("/organizers/:id", getOrganizerById);
 
 adminRoutes.get("/participants", getAllParticipants);
 adminRoutes.get("/participants/:id", getParticipantById);

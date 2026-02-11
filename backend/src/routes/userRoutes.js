@@ -4,7 +4,9 @@ import {
     updateProfile,
     updatePassword,
     deleteMyAccount,
-    requestPasswordReset
+    requestPasswordReset,
+    getAllOrganizers,
+    getOrganizerById
 } from "../controllers/userController.js";
 import { protect } from "../middleware/authMiddleware.js";
 
@@ -13,6 +15,9 @@ const userRoutes = express.Router();
 userRoutes.use(protect);
 
 userRoutes.get("/me", getMe);
+userRoutes.get("/organizer", getAllOrganizers);
+userRoutes.get("/organizer/:id", getOrganizerById);
+
 userRoutes.put("/profile", updateProfile);
 
 userRoutes.patch("/update-password", updatePassword);
