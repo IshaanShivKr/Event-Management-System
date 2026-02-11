@@ -81,3 +81,99 @@ export async function registerForEvent(req, res) {
         session.endSession();
     }
 }
+
+export async function getMyRegistraions(req, res) {
+    try {
+        const registrations = await Registration.find({ participantId: req.user.id })
+                                        .populate("eventId", "name eventStartDate eventEndDate status eventType")
+                                        .sort({ createdAt: -1 });
+
+        return sendSuccess(res, "Registration history fetched", registrations, 200);
+
+    } catch (error) {
+        return sendError(res, "Failed to fetch history", error.message, 500);
+    }
+}
+
+export async function getRegistrationById(req, res) {
+    try {
+        const registration = await Registration.findOne({_id: req.params.id, participantId: req.user.id }).
+                                        populate("eventId");
+
+        if (!registration) {
+            return sendError(res, "Registration record not found", "NOT_FOUND", 404);
+        }
+
+        return sendSuccess(res, "Registration details fetched", registration, 200);
+
+    } catch (error) {
+        return sendError(res, "Error fetching record", error.message, 500);
+    }
+}
+
+export async function getEventAttendees(req, res) {
+    try {
+        const eventId = req.params.id;
+
+        const event = await Event.findById(eventId);
+        if (!event) {
+            return sendError(res, "Event not found", "NOT_FOUND", 404);
+        }
+
+        if (event.organizerId.toString() !== req.user.id) {
+            return sendError(res, "Access denied: You do not own this event", "UNAUTHORIZED", 403);
+        }
+
+        const attendees = await Registration.find({ eventId })
+                            .populate("participantId", "firstName lastName email phone participantType")
+                            .sort({ createdAt: 1 });
+
+        return sendSuccess(res, "Attendees list fetched", attendees, 200);
+
+    } catch (error) {
+        return sendError(res, "Failed to fetch attendees", error.message, 500);
+    }
+}
+
+export async function cancelRegistration(req, res) {
+    const session = await mongoose.startSession();
+    session.startTransaction();
+
+    try {
+        const registrationId = req.params.id;
+        const participantId = req.user.id;
+
+        const registration = await Registration.findOne({ _id: registrationId, participantId });
+        if (!registration) {
+            await session.abortTransaction();
+            return sendError(res, "Registration not found", "NOT_FOUND", 404);
+        }
+
+        const event = registration.eventId;
+
+        if (new Date() > new Date(event.eventStartDate)) {
+            await session.abortTransaction();
+            return sendError(res, "Cannot cancel registration after the event has started", "EVENT_STARTED", 400);
+        }
+
+        if (event.eventType === "Merchandise") {
+            await MerchandiseEvent.findByIdAndUpdate(
+                event._id,
+                { $inc: { stockQuantity: registration.quantity } },
+                { session }
+            );
+        }
+
+        await Registration.findByIdAndDelete(registrationId).session(session);
+
+        await session.commitTransaction();
+        return sendSuccess(res, "Registration cancelled successfully. Any stock/spots have been restored.", null, 200);
+
+    } catch (error) {
+        await session.abortTransaction();
+        return sendError(res, "Cancellation failed", error.message, 500);
+
+    } finally {
+        session.endSession();
+    }
+}
