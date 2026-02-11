@@ -1,3 +1,4 @@
+import mongoose from "mongoose";
 import Event from "../models/Event.js";
 import NormalEvent from "../models/NormalEvent.js";
 import MerchandiseEvent from "../models/MerchandiseEvent.js";

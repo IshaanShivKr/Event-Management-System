@@ -1,6 +1,7 @@
 import User from "../models/User.js";
 import Participant from "../models/Participant.js";
 import Organizer from "../models/Organizer.js";
+import Event from "../models/Event.js";
 import { hashPassword, comparePasswords } from "../utils/authUtils.js";
 import { sendSuccess, sendError } from "../utils/responseHandler.js";
 
@@ -53,7 +54,7 @@ export async function updatePassword(req, res) {
         const { oldPassword, newPassword } = req.body;
         const userId = req.user.id;
 
-        const user = await findById(userId).select("+password");
+        const user = await User.findById(userId).select("+password");
 
         const isMatch = await comparePasswords(oldPassword, user.password);
         if (!isMatch) {
@@ -75,7 +76,7 @@ export async function deleteMyAccount(req, res) {
         const userId = req.user.id;
         const role = req.user.role;
 
-        if (userRole === "Organizer") {
+        if (role === "Organizer") {
             const activeEvents = await Event.countDocuments({ 
                 organizerId: userId,
                 status: { $ne: "Cancelled" }
