@@ -1,7 +1,7 @@
 import User from "../models/User.js";
 import Participant from "../models/Participant.js";
 import Organizer from "../models/Organizer.js";
-import { hashPassword, comparePassword } from "../utils/authUtils.js";
+import { hashPassword, comparePasswords } from "../utils/authUtils.js";
 import { sendSuccess, sendError } from "../utils/responseHandler.js";
 
 export async function getMe(req, res) {
@@ -55,7 +55,7 @@ export async function updatePassword(req, res) {
 
         const user = await findById(userId).select("+password");
 
-        const isMatch = await comparePassword(oldPassword, user.password);
+        const isMatch = await comparePasswords(oldPassword, user.password);
         if (!isMatch) {
             return sendError(res, "Current password incorrect", "INVALID_CREDENTIALS", 401);
         }
