@@ -96,7 +96,7 @@ export async function deleteUser(req, res) {
         if (!deletedUser) {
             return sendError(res, "User not found", "NOT_FOUND", 404);
         }
-        return sendSuccess(res, "User or Organizer removed successfully", null, 200);
+        return sendSuccess(res, "User removed successfully", null, 200);
 
     } catch (error) {
         return sendError(res, "Deletion failed", error.message, 500);
