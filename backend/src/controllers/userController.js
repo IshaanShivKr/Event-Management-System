@@ -141,3 +141,45 @@ export async function getOrganizerById(req, res) {
         return sendError(res, "Error fetching organizer", error.message, 500);
     }
 }
+
+export async function followOrganizer(req, res) {
+    try {
+        const participantId = req.user.id;
+        const organizerId = req.params.id;
+
+        const organizer = await Organizer.findById(organizerId);
+        if (!organizer) {
+            return sendError(res, "Organizer not found", "NOT_FOUND", 404);
+        }
+
+        await Participant.findByIdAndUpdate(participantId, {
+            $addToSet: { followedClubs: organizerId }
+        });
+
+        return sendSuccess(res, "Followed successfully", null, 200);
+
+    } catch (error) {
+        return sendError(res, "Follow action failed", error.message, 500);
+    }
+}
+
+export async function unfollowOrganizer(req, res) {
+    try {
+        const participantId = req.user.id;
+        const organizerId = req.params.id;
+
+        const result = await Participant.updateOne(
+            { _id: participantId, followedClubs: organizerId },
+            { $pull: { followedClubs: organizerId } }
+        );
+
+        if (result.matchedCount === 0) {
+            return sendError(res, "You are not following this organizer", "NOT_FOLLOWING", 400);
+        }
+
+        return sendSuccess(res, "Unfollowed successfully", null, 200);
+
+    } catch (error) {
+        return sendError(res, "Unfollow action failed", error.message, 500);
+    }
+}

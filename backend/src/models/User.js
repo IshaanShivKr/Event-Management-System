@@ -18,7 +18,6 @@ const userSchema = new mongoose.Schema({
         type: String,
         required: true,
     },
-    // Password reset/request fields
     resetRequested: {
         type: Boolean,
         default: false,

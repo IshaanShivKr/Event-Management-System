@@ -86,14 +86,64 @@ export async function registerForEvent(req, res) {
 
 export async function getMyRegistrations(req, res) {
     try {
-        const registrations = await Registration.find({ participantId: req.user.id })
-                                        .populate("eventId", "name eventStartDate eventEndDate status eventType")
-                                        .sort({ createdAt: -1 });
+        const participantId = req.user.id;
+        const { tab } = req.query;
 
-        return sendSuccess(res, "Registration history fetched", registrations, 200);
+        let query = { participantId };
+        const now = new Date();
+
+        if (tab === "cancelled") {
+            query.status = "Cancelled";
+        } else if (tab === "completed") {
+            query.status = "Attended";
+        }
+
+        let registrations = await Registration.find(query)
+            .populate({
+                path: "eventId",
+                populate: {
+                    path: "organizerId",
+                    select: "organizerName category"
+                }
+            })
+            .sort({ createdAt: -1 });
+
+        if (tab === "upcoming") {
+            registrations = registrations.filter(reg => 
+                reg.eventId && 
+                new Date(reg.eventId.eventStartDate) > now && 
+                reg.status === "Registered"
+            );
+        } else if (tab === "normal") {
+            registrations = registrations.filter(reg => 
+                reg.eventId && 
+                reg.eventId.eventType === "Normal"
+            );
+        } else if (tab === "merchandise") {
+            registrations = registrations.filter(reg => 
+                reg.eventId && 
+                reg.eventId.eventType === "Merchandise"
+            );
+        }
+
+        const formattedRegistrations = registrations.map(reg => ({
+            ticketId: reg._id,
+            eventName: reg.eventId?.name,
+            eventType: reg.eventId?.eventType,
+            organizer: reg.eventId?.organizerId?.organizerName,
+            status: reg.status,
+            schedule: {
+                start: reg.eventId?.eventStartDate,
+                end: reg.eventId?.eventEndDate
+            },
+            teamName: reg.responses?.find(f => f.label.toLowerCase().includes("team"))?.value || "Individual",
+            details: reg
+        }));
+
+        return sendSuccess(res, `Fetched ${tab || 'all'} registrations`, formattedRegistrations, 200);
 
     } catch (error) {
-        return sendError(res, "Failed to fetch history", error.message, 500);
+        return sendError(res, "Failed to fetch registrations", error.message, 500);
     }
 }
 

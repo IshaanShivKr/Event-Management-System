@@ -6,9 +6,11 @@ import {
     deleteMyAccount,
     requestPasswordReset,
     getAllOrganizers,
-    getOrganizerById
+    getOrganizerById,
+    followOrganizer,
+    unfollowOrganizer
 } from "../controllers/userController.js";
-import { protect } from "../middleware/authMiddleware.js";
+import { protect, authorize } from "../middleware/authMiddleware.js";
 
 const userRoutes = express.Router();
 
@@ -25,5 +27,8 @@ userRoutes.patch("/update-password", updatePassword);
 userRoutes.delete("/delete-me", deleteMyAccount);
 
 userRoutes.post("/request-reset", requestPasswordReset);
+
+userRoutes.post("/follow/:id", authorize("Participant"), followOrganizer);
+userRoutes.post("/unfollow/:id", authorize("Participant"), unfollowOrganizer);
 
 export default userRoutes;
