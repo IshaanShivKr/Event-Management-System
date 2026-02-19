@@ -14,6 +14,15 @@ export async function protect(req, res, next) {
             if (!req.user) {
                 return sendError(res, "The user belonging to this token no longer exists.", "NOT_FOUND", 401);
             }
+
+            if (req.user.accountStatus && req.user.accountStatus !== "ACTIVE") {
+                return sendError(
+                    res,
+                    `Account is ${req.user.accountStatus.toLowerCase()}. Access denied.`,
+                    "ACCOUNT_INACTIVE",
+                    403,
+                );
+            }
             return next();
 
         } catch (error) {

@@ -30,3 +30,6 @@ export const SMTP_SECURE = String(process.env.SMTP_SECURE || "false").toLowerCas
 export const SMTP_USER = process.env.SMTP_USER || "";
 export const SMTP_PASS = process.env.SMTP_PASS || "";
 export const MAIL_FROM = process.env.MAIL_FROM || "Felicity Fest <no-reply@felicity.local>";
+
+// Organizer account provisioning settings.
+export const ORGANIZER_LOGIN_DOMAIN = process.env.ORGANIZER_LOGIN_DOMAIN || "felicity.local";

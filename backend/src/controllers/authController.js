@@ -47,6 +47,15 @@ export async function login(req, res) {
             return sendError(res, "Invalid email or password", "INVALID_CREDENTIALS", 401);
         }
 
+        if (user.accountStatus && user.accountStatus !== "ACTIVE") {
+            return sendError(
+                res,
+                `Account is ${user.accountStatus.toLowerCase()}. Please contact Admin.`,
+                "ACCOUNT_INACTIVE",
+                403,
+            );
+        }
+
         const accessToken = await generateToken(user);
         const refreshToken = await generateRefreshToken(user);
 
@@ -74,6 +83,15 @@ export async function refreshToken(req, res) {
         const user = await User.findById(decoded.id);
         if (!user) {
             return sendError(res, "User no longer exists", "NOT_FOUND", 404);
+        }
+
+        if (user.accountStatus && user.accountStatus !== "ACTIVE") {
+            return sendError(
+                res,
+                `Account is ${user.accountStatus.toLowerCase()}. Please login after reactivation.`,
+                "ACCOUNT_INACTIVE",
+                403,
+            );
         }
 
         const newAccessToken = await generateToken(user);

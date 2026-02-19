@@ -145,6 +145,10 @@ export async function requestPasswordReset(req, res) {
         }
 
         user.resetRequested = true;
+        user.resetRequestStatus = "Pending";
+        user.resetRequestedAt = new Date();
+        user.resetResolvedAt = null;
+        user.resetResolutionComment = undefined;
         user.resetReason = reason || "Forgotten Password";
         await user.save();
 
