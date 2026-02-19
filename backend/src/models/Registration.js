@@ -60,7 +60,6 @@ const registrationSchema = new mongoose.Schema({
 }, { timestamps: true });
 
 registrationSchema.index({ eventId: 1, participantId: 1 }, { unique: true });
-registrationSchema.index({ ticketId: 1 }, { unique: true, sparse: true });
 
 const Registration = mongoose.model("Registration", registrationSchema);
 export default Registration;
