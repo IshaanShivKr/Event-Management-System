@@ -6,6 +6,10 @@ import {
     getTrendingEvents,
     getEventById,
     getMyEvents,
+    getOrganizerDashboard,
+    getOrganizerOngoingEvents,
+    getOrganizerEventDetail,
+    exportEventParticipantsCsv,
     updateEventStatus,
     updateEvent,
     deleteEvent
@@ -18,7 +22,12 @@ eventRoutes.get("/", getAllEvents);
 eventRoutes.get("/browse", protect, authorize("Participant"), browseEvents);
 eventRoutes.get("/trending", protect, authorize("Participant"), getTrendingEvents);
 
+eventRoutes.get("/dashboard", protect, authorize("Organizer"), getOrganizerDashboard);
+eventRoutes.get("/ongoing", protect, authorize("Organizer"), getOrganizerOngoingEvents);
 eventRoutes.get("/my-events", protect, authorize("Organizer"), getMyEvents);
+eventRoutes.get("/:id/organizer-detail", protect, authorize("Organizer"), getOrganizerEventDetail);
+eventRoutes.get("/:id/participants/export", protect, authorize("Organizer"), exportEventParticipantsCsv);
+
 eventRoutes.get("/:id", getEventById);
 
 eventRoutes.post("/create", protect, authorize("Organizer"), createEvent);

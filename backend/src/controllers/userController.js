@@ -5,6 +5,7 @@ import Organizer from "../models/Organizer.js";
 import Event from "../models/Event.js";
 import { hashPassword, comparePasswords } from "../utils/authUtils.js";
 import { sendSuccess, sendError } from "../utils/responseHandler.js";
+import { isValidDiscordWebhookUrl } from "../utils/discordWebhookService.js";
 
 export async function getMe(req, res) {
     try {
@@ -43,9 +44,18 @@ export async function updateProfile(req, res) {
                 updateData.followedClubs = sanitizedIds;
             }
         } else if (role === "Organizer") {
-            const { organizerName, description, phone, contactEmail, category } = req.body;
-            updateData = { organizerName, description, phone, contactEmail, category };
+            const { organizerName, description, phone, contactEmail, category, discordWebhookUrl } = req.body;
+            updateData = { organizerName, description, phone, contactEmail, category, discordWebhookUrl };
             Model = Organizer;
+
+            if (discordWebhookUrl !== undefined && !isValidDiscordWebhookUrl(discordWebhookUrl)) {
+                return sendError(
+                    res,
+                    "Invalid Discord webhook URL",
+                    "INVALID_DISCORD_WEBHOOK",
+                    400,
+                );
+            }
         } else {
             return sendError(res, "Unauthorized role update", "UNAUTHORIZED_ROLE", 403);
         }

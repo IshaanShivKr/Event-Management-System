@@ -25,6 +25,9 @@ const Organizer = User.discriminator(
             type: String,
             required: true,
         },
+        discordWebhookUrl: {
+            type: String,
+        },
     })
 )
 
