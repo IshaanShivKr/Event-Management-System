@@ -17,8 +17,8 @@ const userRoutes = express.Router();
 userRoutes.use(protect);
 
 userRoutes.get("/me", getMe);
-userRoutes.get("/organizer", getAllOrganizers);
-userRoutes.get("/organizer/:id", getOrganizerById);
+userRoutes.get("/organizer", authorize("Participant"), getAllOrganizers);
+userRoutes.get("/organizer/:id", authorize("Participant"), getOrganizerById);
 
 userRoutes.put("/profile", updateProfile);
 

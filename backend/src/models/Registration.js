@@ -27,7 +27,7 @@ const registrationSchema = new mongoose.Schema({
     },
     status: {
         type: String,
-        enum: ["Registered", "Cancelled", "Waitlisted", "Attended"],
+        enum: ["Registered", "Cancelled", "Rejected", "Waitlisted", "Attended"],
         default: "Registered",
     },
     paymentStatus: {
@@ -37,10 +37,30 @@ const registrationSchema = new mongoose.Schema({
     },
     transactionId: {
         type: String,
-    }
+    },
+    ticketId: {
+        type: String,
+        unique: true,
+        sparse: true,
+    },
+    qrCodeDataUrl: {
+        type: String,
+    },
+    ticketSnapshot: {
+        eventName: String,
+        eventType: String,
+        organizerName: String,
+        participantName: String,
+        participantEmail: String,
+    },
+    confirmationEmailSent: {
+        type: Boolean,
+        default: false,
+    },
 }, { timestamps: true });
 
 registrationSchema.index({ eventId: 1, participantId: 1 }, { unique: true });
+registrationSchema.index({ ticketId: 1 }, { unique: true, sparse: true });
 
 const Registration = mongoose.model("Registration", registrationSchema);
 export default Registration;

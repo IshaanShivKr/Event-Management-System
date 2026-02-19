@@ -22,3 +22,11 @@ if (!JWT_REFRESH_SECRET) {
 
 export const JWT_ACCESS_EXPIRATION = process.env.JWT_ACCESS_EXPIRATION || "15m";
 export const JWT_REFRESH_EXPIRATION = process.env.JWT_REFRESH_EXPIRATION || "7d";
+
+// Optional SMTP settings used for ticket confirmation emails.
+export const SMTP_HOST = process.env.SMTP_HOST || "";
+export const SMTP_PORT = Number(process.env.SMTP_PORT || 587);
+export const SMTP_SECURE = String(process.env.SMTP_SECURE || "false").toLowerCase() === "true";
+export const SMTP_USER = process.env.SMTP_USER || "";
+export const SMTP_PASS = process.env.SMTP_PASS || "";
+export const MAIL_FROM = process.env.MAIL_FROM || "Felicity Fest <no-reply@felicity.local>";

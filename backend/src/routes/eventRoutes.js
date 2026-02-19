@@ -2,6 +2,8 @@ import express from "express";
 import {
     createEvent,
     getAllEvents,
+    browseEvents,
+    getTrendingEvents,
     getEventById,
     getMyEvents,
     updateEventStatus,
@@ -13,6 +15,9 @@ import { protect, authorize } from "../middleware/authMiddleware.js";
 const eventRoutes = express.Router();
 
 eventRoutes.get("/", getAllEvents);
+eventRoutes.get("/browse", protect, authorize("Participant"), browseEvents);
+eventRoutes.get("/trending", protect, authorize("Participant"), getTrendingEvents);
+
 eventRoutes.get("/my-events", protect, authorize("Organizer"), getMyEvents);
 eventRoutes.get("/:id", getEventById);
 

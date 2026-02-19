@@ -3,17 +3,58 @@ import Registration from "../models/Registration.js";
 import Event from "../models/Event.js";
 import NormalEvent from "../models/NormalEvent.js";
 import MerchandiseEvent from "../models/MerchandiseEvent.js";
+import Participant from "../models/Participant.js";
 import { sendSuccess, sendError } from "../utils/responseHandler.js";
+import { generateTicketBundle } from "../utils/ticketUtils.js";
+import { sendTicketConfirmationEmail } from "../utils/emailService.js";
+
+const ACTIVE_REGISTRATION_STATUSES = ["Registered", "Waitlisted", "Attended"];
+
+function formatRegistrationRecord(registration) {
+    return {
+        id: registration._id,
+        ticketId: registration.ticketId || registration._id,
+        ticketRef: registration.ticketId ? `/api/registrations/ticket/${registration.ticketId}` : `/api/registrations/${registration._id}`,
+        eventName: registration.eventId?.name,
+        eventType: registration.eventId?.eventType,
+        organizer: registration.eventId?.organizerId?.organizerName || registration.ticketSnapshot?.organizerName,
+        participationStatus: registration.status,
+        schedule: {
+            start: registration.eventId?.eventStartDate,
+            end: registration.eventId?.eventEndDate,
+        },
+        teamName: registration.responses?.find((field) => (field.label || "").toLowerCase().includes("team"))?.value || "Individual",
+        quantity: registration.quantity,
+        paymentStatus: registration.paymentStatus,
+        qrCodeDataUrl: registration.qrCodeDataUrl,
+        details: registration,
+    };
+}
 
 export async function registerForEvent(req, res) {
     const session = await mongoose.startSession();
     session.startTransaction();
 
-    try {
-        const { eventId, responses, selections, quantity = 1 } = req.body;
-        const participantId = req.user.id;
+    let registration;
+    let participant;
+    let event;
 
-        const event = await Event.findById(eventId).session(session).lean();
+    try {
+        const { eventId, responses, selections, quantity = 1, transactionId } = req.body;
+        const participantId = req.user.id;
+        const parsedQuantity = Math.max(1, Number(quantity) || 1);
+
+        participant = await Participant.findById(participantId).session(session).lean();
+        if (!participant) {
+            await session.abortTransaction();
+            return sendError(res, "Participant account not found", "NOT_FOUND", 404);
+        }
+
+        event = await Event.findById(eventId)
+            .populate("organizerId", "organizerName")
+            .session(session)
+            .lean();
+
         if (!event) {
             await session.abortTransaction();
             return sendError(res, "Event not found", "NOT_FOUND", 404);
@@ -24,7 +65,7 @@ export async function registerForEvent(req, res) {
             return sendError(res, `Registrations are currently ${event.status.toLowerCase()}`, "REGISTRATION_UNAVAILABLE", 400);
         }
 
-        if (event.eligibility !== "ALL" && event.eligibility !== req.user.participantType) {
+        if (event.eligibility !== "ALL" && event.eligibility !== participant.participantType) {
             await session.abortTransaction();
             return sendError(res, "You are not eligible for this event", "INELIGIBLE_PARTICIPANT", 403);
         }
@@ -34,22 +75,43 @@ export async function registerForEvent(req, res) {
             return sendError(res, "Registration deadline passed", "DEADLINE_PASSED", 400);
         }
 
+        const existing = await Registration.findOne({ eventId, participantId }).session(session);
+        if (existing && !["Cancelled", "Rejected"].includes(existing.status)) {
+            await session.abortTransaction();
+            return sendError(res, "You are already registered for this event.", "DUPLICATE_REGISTRATION", 400);
+        }
+
         if (event.eventType === "Normal") {
-            const currentRegs = await Registration.countDocuments({ eventId }).session(session);
+            const currentRegs = await Registration.countDocuments({
+                eventId,
+                status: { $in: ACTIVE_REGISTRATION_STATUSES },
+            }).session(session);
 
             if (currentRegs >= event.registrationLimit) {
                 await session.abortTransaction();
                 return sendError(res, "Event registration limit reached.", "CAPACITY_REACHED", 400);
             }
-            
-            if (currentRegs === 0) {
-                await NormalEvent.findByIdAndUpdate(eventId, { formLocked: true }).session(session);
+
+            const normalEvent = await NormalEvent.findById(eventId).session(session);
+            if (normalEvent && !normalEvent.formLocked) {
+                normalEvent.formLocked = true;
+                await normalEvent.save({ session });
             }
-        } else {
+        } else if (event.eventType === "Merchandise") {
+            if (event.purchaseLimit && parsedQuantity > event.purchaseLimit) {
+                await session.abortTransaction();
+                return sendError(
+                    res,
+                    `You can purchase up to ${event.purchaseLimit} unit(s) for this item.`,
+                    "PURCHASE_LIMIT_EXCEEDED",
+                    400,
+                );
+            }
+
             const updatedMerch = await MerchandiseEvent.findOneAndUpdate(
-                { _id: eventId, stockQuantity: { $gte: quantity } },
-                { $inc: { stockQuantity: -quantity } },
-                { new: true, session }
+                { _id: eventId, stockQuantity: { $gte: parsedQuantity } },
+                { $inc: { stockQuantity: -parsedQuantity } },
+                { new: true, session },
             );
 
             if (!updatedMerch) {
@@ -59,22 +121,34 @@ export async function registerForEvent(req, res) {
         }
 
         const price = event.price ?? event.registrationFee ?? 0;
+        registration = existing || new Registration({ eventId, participantId });
 
-        const registration = new Registration({ 
-            eventId,
-            participantId,
-            responses: event.eventType === "Normal" ? responses : undefined,
-            selections: event.eventType === "Merchandise" ? selections : undefined,
-            quantity: event.eventType === "Merchandise" ? quantity : 1,
-            paymentStatus: price > 0 ? "Pending" : "N/A"
+        registration.responses = event.eventType === "Normal" ? (Array.isArray(responses) ? responses : []) : [];
+        registration.selections = event.eventType === "Merchandise" ? (selections || {}) : undefined;
+        registration.quantity = event.eventType === "Merchandise" ? parsedQuantity : 1;
+        registration.status = "Registered";
+        registration.paymentStatus = price > 0 ? "Completed" : "N/A";
+        registration.transactionId = transactionId || registration.transactionId;
+
+        const ticketBundle = await generateTicketBundle({
+            event,
+            participant,
+            registrationId: registration._id,
+            organizerName: event.organizerId?.organizerName,
         });
+
+        registration.ticketId = ticketBundle.ticketId;
+        registration.qrCodeDataUrl = ticketBundle.qrCodeDataUrl;
+        registration.ticketSnapshot = ticketBundle.ticketSnapshot;
+        registration.confirmationEmailSent = false;
 
         await registration.save({ session });
         await session.commitTransaction();
-        return sendSuccess(res, "Registration successful", registration, 201);
 
     } catch (error) {
-        await session.abortTransaction();
+        if (session.inTransaction()) {
+            await session.abortTransaction();
+        }
         if (error.code === 11000) {
             return sendError(res, "You are already registered for this event.", "DUPLICATE_REGISTRATION", 400);
         }
@@ -82,6 +156,29 @@ export async function registerForEvent(req, res) {
     } finally {
         session.endSession();
     }
+
+    try {
+        const emailResult = await sendTicketConfirmationEmail({
+            participant,
+            event,
+            registration,
+        });
+
+        if (emailResult.sent) {
+            await Registration.findByIdAndUpdate(registration._id, { confirmationEmailSent: true });
+            registration.confirmationEmailSent = true;
+        }
+    } catch (emailError) {
+        console.error("Ticket email failed:", emailError.message);
+    }
+
+    const savedRegistration = await Registration.findById(registration._id)
+        .populate({
+            path: "eventId",
+            populate: { path: "organizerId", select: "organizerName category description contactEmail" },
+        });
+
+    return sendSuccess(res, "Registration successful", formatRegistrationRecord(savedRegistration), 201);
 }
 
 export async function getMyRegistrations(req, res) {
@@ -89,58 +186,38 @@ export async function getMyRegistrations(req, res) {
         const participantId = req.user.id;
         const { tab } = req.query;
 
-        let query = { participantId };
         const now = new Date();
-
-        if (tab === "cancelled") {
-            query.status = "Cancelled";
-        } else if (tab === "completed") {
-            query.status = "Attended";
-        }
-
-        let registrations = await Registration.find(query)
+        let registrations = await Registration.find({ participantId })
             .populate({
                 path: "eventId",
                 populate: {
                     path: "organizerId",
-                    select: "organizerName category"
-                }
+                    select: "organizerName category",
+                },
             })
             .sort({ createdAt: -1 });
 
         if (tab === "upcoming") {
-            registrations = registrations.filter(reg => 
-                reg.eventId && 
-                new Date(reg.eventId.eventStartDate) > now && 
-                reg.status === "Registered"
+            registrations = registrations.filter((reg) =>
+                reg.eventId
+                && new Date(reg.eventId.eventStartDate) > now
+                && ACTIVE_REGISTRATION_STATUSES.includes(reg.status)
             );
         } else if (tab === "normal") {
-            registrations = registrations.filter(reg => 
-                reg.eventId && 
-                reg.eventId.eventType === "Normal"
-            );
+            registrations = registrations.filter((reg) => reg.eventId && reg.eventId.eventType === "Normal");
         } else if (tab === "merchandise") {
-            registrations = registrations.filter(reg => 
-                reg.eventId && 
-                reg.eventId.eventType === "Merchandise"
+            registrations = registrations.filter((reg) => reg.eventId && reg.eventId.eventType === "Merchandise");
+        } else if (tab === "completed") {
+            registrations = registrations.filter((reg) =>
+                reg.status === "Attended"
+                || (reg.eventId && new Date(reg.eventId.eventEndDate) < now && reg.status === "Registered")
             );
+        } else if (tab === "cancelled" || tab === "cancelled-rejected" || tab === "rejected") {
+            registrations = registrations.filter((reg) => ["Cancelled", "Rejected"].includes(reg.status));
         }
 
-        const formattedRegistrations = registrations.map(reg => ({
-            ticketId: reg._id,
-            eventName: reg.eventId?.name,
-            eventType: reg.eventId?.eventType,
-            organizer: reg.eventId?.organizerId?.organizerName,
-            status: reg.status,
-            schedule: {
-                start: reg.eventId?.eventStartDate,
-                end: reg.eventId?.eventEndDate
-            },
-            teamName: reg.responses?.find(f => f.label.toLowerCase().includes("team"))?.value || "Individual",
-            details: reg
-        }));
-
-        return sendSuccess(res, `Fetched ${tab || 'all'} registrations`, formattedRegistrations, 200);
+        const formattedRegistrations = registrations.map(formatRegistrationRecord);
+        return sendSuccess(res, `Fetched ${tab || "all"} registrations`, formattedRegistrations, 200);
 
     } catch (error) {
         return sendError(res, "Failed to fetch registrations", error.message, 500);
@@ -149,17 +226,41 @@ export async function getMyRegistrations(req, res) {
 
 export async function getRegistrationById(req, res) {
     try {
-        const registration = await Registration.findOne({_id: req.params.id, participantId: req.user.id }).
-                                        populate("eventId");
+        const registration = await Registration.findOne({ _id: req.params.id, participantId: req.user.id })
+            .populate({
+                path: "eventId",
+                populate: { path: "organizerId", select: "organizerName category description contactEmail" },
+            });
 
         if (!registration) {
             return sendError(res, "Registration record not found", "NOT_FOUND", 404);
         }
 
-        return sendSuccess(res, "Registration details fetched", registration, 200);
+        return sendSuccess(res, "Registration details fetched", formatRegistrationRecord(registration), 200);
 
     } catch (error) {
         return sendError(res, "Error fetching record", error.message, 500);
+    }
+}
+
+export async function getRegistrationByTicketId(req, res) {
+    try {
+        const registration = await Registration.findOne({
+            ticketId: req.params.ticketId,
+            participantId: req.user.id,
+        }).populate({
+            path: "eventId",
+            populate: { path: "organizerId", select: "organizerName category description contactEmail" },
+        });
+
+        if (!registration) {
+            return sendError(res, "Ticket not found", "NOT_FOUND", 404);
+        }
+
+        return sendSuccess(res, "Ticket details fetched", formatRegistrationRecord(registration), 200);
+
+    } catch (error) {
+        return sendError(res, "Error fetching ticket", error.message, 500);
     }
 }
 
@@ -176,9 +277,12 @@ export async function getEventAttendees(req, res) {
             return sendError(res, "Access denied: You do not own this event", "UNAUTHORIZED", 403);
         }
 
-        const attendees = await Registration.find({ eventId })
-                            .populate("participantId", "firstName lastName email phone participantType")
-                            .sort({ createdAt: 1 });
+        const attendees = await Registration.find({
+            eventId,
+            status: { $in: ACTIVE_REGISTRATION_STATUSES },
+        })
+            .populate("participantId", "firstName lastName email phone participantType")
+            .sort({ createdAt: 1 });
 
         return sendSuccess(res, "Attendees list fetched", attendees, 200);
 
@@ -195,34 +299,48 @@ export async function cancelRegistration(req, res) {
         const registrationId = req.params.id;
         const participantId = req.user.id;
 
-        const registration = await Registration.findOne({ _id: registrationId, participantId }).populate("eventId");
+        const registration = await Registration.findOne({ _id: registrationId, participantId })
+            .populate("eventId")
+            .session(session);
         if (!registration) {
             await session.abortTransaction();
             return sendError(res, "Registration not found", "NOT_FOUND", 404);
         }
 
+        if (registration.status === "Cancelled") {
+            await session.abortTransaction();
+            return sendError(res, "Registration is already cancelled", "ALREADY_CANCELLED", 400);
+        }
+
         const event = registration.eventId;
+        if (!event) {
+            await session.abortTransaction();
+            return sendError(res, "Associated event not found", "NOT_FOUND", 404);
+        }
 
         if (new Date() > new Date(event.eventStartDate)) {
             await session.abortTransaction();
             return sendError(res, "Cannot cancel registration after the event has started", "EVENT_STARTED", 400);
         }
 
-        if (event.eventType === "Merchandise") {
+        if (event.eventType === "Merchandise" && ACTIVE_REGISTRATION_STATUSES.includes(registration.status)) {
             await MerchandiseEvent.findByIdAndUpdate(
                 event._id,
                 { $inc: { stockQuantity: registration.quantity } },
-                { session }
+                { session },
             );
         }
 
-        await Registration.findByIdAndDelete(registrationId).session(session);
+        registration.status = "Cancelled";
+        await registration.save({ session });
 
         await session.commitTransaction();
-        return sendSuccess(res, "Registration cancelled successfully. Any stock/spots have been restored.", null, 200);
+        return sendSuccess(res, "Registration cancelled successfully", formatRegistrationRecord(registration), 200);
 
     } catch (error) {
-        await session.abortTransaction();
+        if (session.inTransaction()) {
+            await session.abortTransaction();
+        }
         return sendError(res, "Cancellation failed", error.message, 500);
 
     } finally {
