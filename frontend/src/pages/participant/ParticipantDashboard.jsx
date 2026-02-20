@@ -58,6 +58,7 @@ function ParticipantDashboard() {
               <th>Type</th>
               <th>Organizer</th>
               <th>Status</th>
+              <th>Team Name</th>
               <th>Schedule</th>
               <th>Ticket</th>
             </tr>
@@ -69,6 +70,7 @@ function ParticipantDashboard() {
                 <td>{row.eventType}</td>
                 <td>{row.organizer}</td>
                 <td>{row.participationStatus}</td>
+                <td>{row.teamName || "Individual"}</td>
                 <td>
                   {row.schedule?.start ? new Date(row.schedule.start).toLocaleString() : "-"}
                 </td>
@@ -79,7 +81,7 @@ function ParticipantDashboard() {
             ))}
             {!rows.length && !loading && (
               <tr>
-                <td colSpan="6">No records found</td>
+                <td colSpan="7">No records found</td>
               </tr>
             )}
           </tbody>

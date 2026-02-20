@@ -123,7 +123,22 @@ export async function registerForEvent(req, res) {
         const price = event.price ?? event.registrationFee ?? 0;
         registration = existing || new Registration({ eventId, participantId });
 
-        registration.responses = event.eventType === "Normal" ? (Array.isArray(responses) ? responses : []) : [];
+        let processedResponses = [];
+        if (event.eventType === "Normal") {
+            const normalEvent = await NormalEvent.findById(eventId).session(session);
+            if (Array.isArray(responses)) {
+                processedResponses = responses.map(response => {
+                    const fieldDef = normalEvent.customFormFields.find(f => f._id.toString() === response.fieldId);
+                    return {
+                        fieldId: response.fieldId,
+                        label: fieldDef ? fieldDef.label : "Unknown Field",
+                        value: response.value
+                    };
+                });
+            }
+        }
+
+        registration.responses = processedResponses;
         registration.selections = event.eventType === "Merchandise" ? (selections || {}) : undefined;
         registration.quantity = event.eventType === "Merchandise" ? parsedQuantity : 1;
         registration.status = "Registered";

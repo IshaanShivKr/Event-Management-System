@@ -76,6 +76,10 @@ export async function updateProfile(req, res) {
 
 export async function updatePassword(req, res) {
     try {
+        if (req.user.role !== "Participant") {
+            return sendError(res, "Only participants can update their password directly", "UNAUTHORIZED_ROLE", 403);
+        }
+
         const { oldPassword, newPassword } = req.body;
         const userId = req.user.id;
 
@@ -138,6 +142,10 @@ export async function deleteMyAccount(req, res) {
 
 export async function requestPasswordReset(req, res) {
     try {
+        if (req.user.role !== "Organizer") {
+            return sendError(res, "Only organizers can request a password reset from admin", "UNAUTHORIZED_ROLE", 403);
+        }
+
         const { reason } = req.body;
         const user = await User.findById(req.user.id);
         if (!user) {

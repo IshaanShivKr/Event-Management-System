@@ -5,7 +5,6 @@ function ParticipantProfile() {
   const [profile, setProfile] = useState(null);
   const [organizers, setOrganizers] = useState([]);
   const [passwordForm, setPasswordForm] = useState({ oldPassword: "", newPassword: "" });
-  const [resetReason, setResetReason] = useState("");
   const [error, setError] = useState("");
 
   const fetchData = async () => {
@@ -55,27 +54,9 @@ function ParticipantProfile() {
     }
   };
 
-  const requestReset = async (e) => {
-    e.preventDefault();
-    try {
-      await api.post("/users/request-reset", { reason: resetReason });
-      setResetReason("");
-      alert("Reset request submitted");
-    } catch (err) {
-      alert(getApiErrorMessage(err, "Failed to submit reset request"));
-    }
-  };
-
-  const toggleFollowedClub = (id) => {
-    setProfile((prev) => {
-      const current = new Set(prev.followedClubs || []);
-      if (current.has(id)) current.delete(id);
-      else current.add(id);
-      return { ...prev, followedClubs: Array.from(current) };
-    });
-  };
-
   if (!profile) return <div className="page">{error ? <p>{error}</p> : <p>Loading...</p>}</div>;
+
+  const followedOrganizers = organizers.filter((org) => (profile.followedClubs || []).includes(org._id));
 
   return (
     <div className="page">
@@ -96,20 +77,17 @@ function ParticipantProfile() {
         <p className="muted">Participant Type: {profile.participantType} (non-editable)</p>
 
         <h4>Followed Clubs</h4>
-        <div className="checklist">
-          {organizers.map((org) => (
-            <label key={org._id} className="inline">
-              <input
-                type="checkbox"
-                checked={(profile.followedClubs || []).includes(org._id)}
-                onChange={() => toggleFollowedClub(org._id)}
-              />
-              {org.organizerName}
-            </label>
-          ))}
-        </div>
+        {followedOrganizers.length > 0 ? (
+          <ul style={{ marginLeft: "1.5rem" }}>
+            {followedOrganizers.map((org) => (
+              <li key={org._id}>{org.organizerName}</li>
+            ))}
+          </ul>
+        ) : (
+          <p className="muted">Not following any clubs currently.</p>
+        )}
 
-        <button className="button" type="submit">Save Profile</button>
+        <button className="button" type="submit" style={{ marginTop: "1rem" }}>Save Profile</button>
       </form>
 
       <form className="card" onSubmit={updatePassword}>
@@ -131,18 +109,6 @@ function ParticipantProfile() {
           required
         />
         <button className="button" type="submit">Update Password</button>
-      </form>
-
-      <form className="card" onSubmit={requestReset}>
-        <h3>Request Admin Reset</h3>
-        <input
-          className="input"
-          placeholder="Reason"
-          value={resetReason}
-          onChange={(e) => setResetReason(e.target.value)}
-          required
-        />
-        <button className="button button-secondary" type="submit">Submit Reset Request</button>
       </form>
     </div>
   );

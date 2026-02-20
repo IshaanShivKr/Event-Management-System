@@ -3,7 +3,6 @@ import api, { getApiErrorMessage } from "../../services/api";
 
 function OrganizerProfile() {
   const [profile, setProfile] = useState(null);
-  const [passwordForm, setPasswordForm] = useState({ oldPassword: "", newPassword: "" });
   const [error, setError] = useState("");
 
   useEffect(() => {
@@ -32,17 +31,6 @@ function OrganizerProfile() {
       alert("Profile updated");
     } catch (err) {
       alert(getApiErrorMessage(err, "Failed to update profile"));
-    }
-  };
-
-  const savePassword = async (e) => {
-    e.preventDefault();
-    try {
-      await api.patch("/users/update-password", passwordForm);
-      setPasswordForm({ oldPassword: "", newPassword: "" });
-      alert("Password updated");
-    } catch (err) {
-      alert(getApiErrorMessage(err, "Failed to update password"));
     }
   };
 
@@ -75,27 +63,6 @@ function OrganizerProfile() {
         <button className="button" type="submit">Save Profile</button>
       </form>
 
-      <form className="card" onSubmit={savePassword}>
-        <h3>Change Password</h3>
-        <input
-          className="input"
-          type="password"
-          placeholder="Current password"
-          value={passwordForm.oldPassword}
-          onChange={(e) => setPasswordForm((p) => ({ ...p, oldPassword: e.target.value }))}
-          required
-        />
-        <input
-          className="input"
-          type="password"
-          placeholder="New password"
-          value={passwordForm.newPassword}
-          onChange={(e) => setPasswordForm((p) => ({ ...p, newPassword: e.target.value }))}
-          required
-        />
-        <button className="button" type="submit">Update Password</button>
-      </form>
-
       <div className="card">
         <h3>Admin Reset Request</h3>
         <button className="button button-secondary" onClick={requestReset}>Request Password Reset from Admin</button>
@@ -105,3 +72,4 @@ function OrganizerProfile() {
 }
 
 export default OrganizerProfile;
+

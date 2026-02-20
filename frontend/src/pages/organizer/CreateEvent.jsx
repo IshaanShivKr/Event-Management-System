@@ -19,13 +19,36 @@ const initialForm = {
 
 function CreateEvent() {
   const [form, setForm] = useState(initialForm);
-  const [customFormJson, setCustomFormJson] = useState("[]");
+  const [customFields, setCustomFields] = useState([]);
   const [message, setMessage] = useState("");
   const [error, setError] = useState("");
 
   const onChange = (e) => {
     const { name, value } = e.target;
     setForm((prev) => ({ ...prev, [name]: value }));
+  };
+
+  const addCustomField = () => {
+    setCustomFields((prev) => [
+      ...prev,
+      { label: "", fieldType: "text", required: false, options: [], order: prev.length },
+    ]);
+  };
+
+  const updateCustomField = (index, key, value) => {
+    setCustomFields((prev) => {
+      const updated = [...prev];
+      if (key === "options") {
+        updated[index][key] = value.split(",").map((v) => v.trim()).filter(Boolean);
+      } else {
+        updated[index][key] = value;
+      }
+      return updated;
+    });
+  };
+
+  const removeCustomField = (index) => {
+    setCustomFields((prev) => prev.filter((_, i) => i !== index));
   };
 
   const onSubmit = async (e) => {
@@ -42,7 +65,8 @@ function CreateEvent() {
 
       if (form.eventType === "Normal") {
         payload.registrationFee = Number(form.registrationFee);
-        payload.customFormFields = JSON.parse(customFormJson || "[]");
+        // Map customFields to ensure order and correct shape
+        payload.customFormFields = customFields.map((f, i) => ({ ...f, order: i }));
       } else {
         payload.price = Number(form.price);
         payload.stockQuantity = Number(form.stockQuantity);
@@ -53,7 +77,7 @@ function CreateEvent() {
       const response = await api.post("/events/create", payload);
       setMessage(`Created draft event: ${response.data?.data?.name}`);
       setForm(initialForm);
-      setCustomFormJson("[]");
+      setCustomFields([]);
     } catch (err) {
       setError(getApiErrorMessage(err, "Failed to create event"));
     }
@@ -88,19 +112,42 @@ function CreateEvent() {
 
         {form.eventType === "Normal" ? (
           <>
-            <input className="input" name="registrationFee" type="number" min="0" value={form.registrationFee} onChange={onChange} />
-            <label>Custom Form Fields (JSON)</label>
-            <textarea className="input" rows="6" value={customFormJson} onChange={(e) => setCustomFormJson(e.target.value)} />
+            <input className="input" name="registrationFee" type="number" min="0" value={form.registrationFee} onChange={onChange} placeholder="Registration Fee" />
+
+            <div style={{ marginTop: "15px", borderTop: "1px solid #ccc", paddingTop: "10px" }}>
+              <h4>Custom Form Builder</h4>
+              {customFields.map((field, index) => (
+                <div key={index} style={{ border: "1px solid #eee", padding: "10px", marginBottom: "10px", borderRadius: "5px" }}>
+                  <div style={{ display: "flex", gap: "10px", marginBottom: "5px" }}>
+                    <input className="input" placeholder="Field Label (e.g. T-Shirt Size)" value={field.label} onChange={(e) => updateCustomField(index, "label", e.target.value)} style={{ flex: 1 }} required />
+                    <select className="input" value={field.fieldType} onChange={(e) => updateCustomField(index, "fieldType", e.target.value)}>
+                      <option value="text">Text</option>
+                      <option value="dropdown">Dropdown</option>
+                      <option value="checkbox">Checkbox</option>
+                      <option value="file">File Upload</option>
+                    </select>
+                    <label style={{ display: "flex", alignItems: "center", gap: "5px" }}>
+                      <input type="checkbox" checked={field.required} onChange={(e) => updateCustomField(index, "required", e.target.checked)} /> Req
+                    </label>
+                    <button type="button" className="button button-danger" onClick={() => removeCustomField(index)}>X</button>
+                  </div>
+                  {(field.fieldType === "dropdown" || field.fieldType === "checkbox") && (
+                    <input className="input small" placeholder="Options (comma separated)" value={field.options.join(", ")} onChange={(e) => updateCustomField(index, "options", e.target.value)} />
+                  )}
+                </div>
+              ))}
+              <button type="button" className="button button-secondary" onClick={addCustomField}>+ Add Field</button>
+            </div>
           </>
         ) : (
           <>
-            <input className="input" name="price" type="number" min="0" value={form.price} onChange={onChange} required />
-            <input className="input" name="stockQuantity" type="number" min="0" value={form.stockQuantity} onChange={onChange} required />
-            <input className="input" name="purchaseLimit" type="number" min="1" value={form.purchaseLimit} onChange={onChange} />
+            <input className="input" name="price" type="number" min="0" value={form.price} onChange={onChange} required placeholder="Price" />
+            <input className="input" name="stockQuantity" type="number" min="0" value={form.stockQuantity} onChange={onChange} required placeholder="Stock Quantity" />
+            <input className="input" name="purchaseLimit" type="number" min="1" value={form.purchaseLimit} onChange={onChange} placeholder="Max Purchase Limit" />
           </>
         )}
 
-        <button className="button" type="submit">Create Draft</button>
+        <button className="button" type="submit" style={{ marginTop: "20px" }}>Create Draft</button>
       </form>
     </div>
   );

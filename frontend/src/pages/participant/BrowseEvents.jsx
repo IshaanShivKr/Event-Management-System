@@ -10,6 +10,10 @@ function BrowseEvents() {
     search: "",
     eventType: "",
     followedOnly: false,
+    trending: false,
+    eligibility: "",
+    startDate: "",
+    endDate: "",
   });
 
   const fetchEvents = async () => {
@@ -21,6 +25,10 @@ function BrowseEvents() {
           search: filters.search || undefined,
           eventType: filters.eventType || undefined,
           followedOnly: filters.followedOnly || undefined,
+          eligibility: filters.eligibility || undefined,
+          trending: filters.trending || undefined,
+          startDate: filters.startDate || undefined,
+          endDate: filters.endDate || undefined,
         },
       });
       setEvents(response.data?.data?.events || []);
@@ -67,14 +75,49 @@ function BrowseEvents() {
           <option value="Normal">Normal</option>
           <option value="Merchandise">Merchandise</option>
         </select>
-        <label className="inline">
-          <input
-            type="checkbox"
-            checked={filters.followedOnly}
-            onChange={(e) => setFilters((prev) => ({ ...prev, followedOnly: e.target.checked }))}
-          />
-          Followed clubs only
-        </label>
+        <select
+          className="input"
+          value={filters.eligibility}
+          onChange={(e) => setFilters((prev) => ({ ...prev, eligibility: e.target.value }))}
+        >
+          <option value="">All Eligibility</option>
+          <option value="IIIT">IIIT Only</option>
+          <option value="NON_IIIT">Non-IIIT Only</option>
+        </select>
+
+        <input
+          className="input"
+          type="date"
+          placeholder="From Date"
+          value={filters.startDate}
+          onChange={(e) => setFilters((prev) => ({ ...prev, startDate: e.target.value }))}
+        />
+        <input
+          className="input"
+          type="date"
+          placeholder="To Date"
+          value={filters.endDate}
+          onChange={(e) => setFilters((prev) => ({ ...prev, endDate: e.target.value }))}
+        />
+
+        <div style={{ display: "flex", flexDirection: "column", gap: "10px", justifyContent: "center" }}>
+          <label className="inline">
+            <input
+              type="checkbox"
+              checked={filters.followedOnly}
+              onChange={(e) => setFilters((prev) => ({ ...prev, followedOnly: e.target.checked }))}
+            />
+            Followed clubs only
+          </label>
+          <label className="inline">
+            <input
+              type="checkbox"
+              checked={filters.trending}
+              onChange={(e) => setFilters((prev) => ({ ...prev, trending: e.target.checked }))}
+            />
+            Trending (Top 5 / 24h)
+          </label>
+        </div>
       </div>
 
       <div className="inline">

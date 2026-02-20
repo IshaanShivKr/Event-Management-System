@@ -6,6 +6,7 @@ function ParticipantEventDetail() {
   const { eventId } = useParams();
   const [event, setEvent] = useState(null);
   const [quantity, setQuantity] = useState(1);
+  const [formResponses, setFormResponses] = useState({});
   const [error, setError] = useState("");
 
   const fetchEvent = async () => {
@@ -21,12 +22,23 @@ function ParticipantEventDetail() {
     fetchEvent();
   }, [eventId]);
 
+  const handleResponseChange = (fieldId, value) => {
+    setFormResponses(prev => ({ ...prev, [fieldId]: value }));
+  };
+
   const register = async () => {
     try {
-      await api.post("/registrations/register", {
-        eventId,
-        quantity: event?.eventType === "Merchandise" ? Number(quantity) || 1 : undefined,
-      });
+      const payload = { eventId };
+      if (event?.eventType === "Normal") {
+        payload.responses = Object.entries(formResponses).map(([fieldId, value]) => ({
+          fieldId,
+          value: Array.isArray(value) ? value.join(", ") : value
+        }));
+      } else if (event?.eventType === "Merchandise") {
+        payload.quantity = Number(quantity) || 1;
+      }
+
+      await api.post("/registrations/register", payload);
       alert("Registration successful");
       fetchEvent();
     } catch (err) {
@@ -50,14 +62,67 @@ function ParticipantEventDetail() {
         <p>Start: {new Date(event.eventStartDate).toLocaleString()}</p>
         <p>End: {new Date(event.eventEndDate).toLocaleString()}</p>
         <p>Deadline: {new Date(event.registrationDeadline).toLocaleString()}</p>
+        {(event.registrationFee > 0 || event.price > 0) && (
+          <p><strong>Price: ₹{event.registrationFee || event.price}</strong></p>
+        )}
+
+        {event.eventType === "Normal" && event.customFormFields?.length > 0 && (
+          <div style={{ marginTop: "20px", marginBottom: "20px", borderTop: "1px solid #ccc", paddingTop: "10px" }}>
+            <h4>Registration Form</h4>
+            {event.customFormFields.map(field => (
+              <div key={field._id} style={{ marginBottom: "15px" }}>
+                <label style={{ display: "block", marginBottom: "5px", fontWeight: "bold" }}>
+                  {field.label} {field.required && <span style={{ color: "red" }}>*</span>}
+                </label>
+
+                {field.fieldType === "text" && (
+                  <input className="input" type="text"
+                    onChange={e => handleResponseChange(field._id, e.target.value)}
+                    required={field.required}
+                  />
+                )}
+
+                {field.fieldType === "dropdown" && (
+                  <select className="input" onChange={e => handleResponseChange(field._id, e.target.value)} required={field.required}>
+                    <option value="">Select...</option>
+                    {field.options?.map(opt => <option key={opt} value={opt}>{opt}</option>)}
+                  </select>
+                )}
+
+                {field.fieldType === "checkbox" && (
+                  <div>
+                    {field.options?.map(opt => (
+                      <label key={opt} style={{ display: "block", marginBottom: "5px" }}>
+                        <input type="checkbox"
+                          onChange={(e) => {
+                            const current = formResponses[field._id] || [];
+                            const updated = e.target.checked
+                              ? [...current, opt]
+                              : current.filter(val => val !== opt);
+                            handleResponseChange(field._id, updated);
+                          }}
+                        /> {opt}
+                      </label>
+                    ))}
+                  </div>
+                )}
+
+                {field.fieldType === "file" && (
+                  <input className="input" type="file" onChange={e => handleResponseChange(field._id, e.target.value)} required={field.required} />
+                )}
+              </div>
+            ))}
+          </div>
+        )}
 
         {event.eventType === "Merchandise" && (
-          <div className="inline">
+          <div className="inline" style={{ marginTop: "15px", marginBottom: "15px" }}>
             <label>Quantity:</label>
             <input
               className="input small"
               type="number"
               min="1"
+              max={event.purchaseLimit || 1}
               value={quantity}
               onChange={(e) => setQuantity(e.target.value)}
             />
