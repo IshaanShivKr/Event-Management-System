@@ -65,7 +65,7 @@ function Login() {
           </button>
         </form>
         <p className="muted">
-          Participant? <Link to="/register">Create account</Link>
+          Don't have an account? <Link to="/register">Create account</Link>
         </p>
       </div>
     </div>
