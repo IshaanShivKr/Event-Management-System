@@ -73,8 +73,8 @@ function ParticipantProfile() {
           value={(profile.interests || []).join(", ")}
           onChange={(e) => setProfile((p) => ({ ...p, interests: e.target.value.split(",").map((x) => x.trim()).filter(Boolean) }))}
         />
-        <p className="muted">Email: {profile.email} (non-editable)</p>
-        <p className="muted">Participant Type: {profile.participantType} (non-editable)</p>
+        <p className="muted">Email: {profile.email}</p>
+        <p className="muted">Participant Type: {profile.participantType}</p>
 
         <h4>Followed Clubs</h4>
         {followedOrganizers.length > 0 ? (

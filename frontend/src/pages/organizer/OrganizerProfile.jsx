@@ -25,7 +25,6 @@ function OrganizerProfile() {
         category: profile.category,
         description: profile.description,
         contactEmail: profile.contactEmail,
-        phone: profile.phone,
         discordWebhookUrl: profile.discordWebhookUrl || "",
       });
       alert("Profile updated");
@@ -57,7 +56,6 @@ function OrganizerProfile() {
         </select>
         <textarea className="input" value={profile.description || ""} onChange={(e) => setProfile((p) => ({ ...p, description: e.target.value }))} />
         <input className="input" value={profile.contactEmail || ""} onChange={(e) => setProfile((p) => ({ ...p, contactEmail: e.target.value }))} />
-        <input className="input" value={profile.phone || ""} onChange={(e) => setProfile((p) => ({ ...p, phone: e.target.value }))} />
         <input className="input" value={profile.discordWebhookUrl || ""} onChange={(e) => setProfile((p) => ({ ...p, discordWebhookUrl: e.target.value }))} placeholder="Discord webhook URL" />
         <p className="muted">Login email (non-editable): {profile.email}</p>
         <button className="button" type="submit">Save Profile</button>

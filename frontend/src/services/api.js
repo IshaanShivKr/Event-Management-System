@@ -15,6 +15,20 @@ api.interceptors.request.use((config) => {
   return config;
 });
 
+api.interceptors.response.use(
+  (response) => response,
+  (error) => {
+    const isAuthRoute = error.config?.url?.includes("/auth/login") || error.config?.url?.includes("/auth/register");
+    if (error.response && error.response.status === 401 && !isAuthRoute) {
+      localStorage.removeItem("accessToken");
+      localStorage.removeItem("userRole");
+      localStorage.removeItem("userName");
+      window.location.href = "/login";
+    }
+    return Promise.reject(error);
+  }
+);
+
 export function getApiErrorMessage(error, fallback = "Something went wrong") {
   return error?.response?.data?.message || fallback;
 }

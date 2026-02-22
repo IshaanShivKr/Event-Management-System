@@ -44,8 +44,8 @@ export async function updateProfile(req, res) {
                 updateData.followedClubs = sanitizedIds;
             }
         } else if (role === "Organizer") {
-            const { organizerName, description, phone, contactEmail, category, discordWebhookUrl } = req.body;
-            updateData = { organizerName, description, phone, contactEmail, category, discordWebhookUrl };
+            const { organizerName, description, contactEmail, category, discordWebhookUrl } = req.body;
+            updateData = { organizerName, description, contactEmail, category, discordWebhookUrl };
             Model = Organizer;
 
             if (discordWebhookUrl !== undefined && !isValidDiscordWebhookUrl(discordWebhookUrl)) {

@@ -90,49 +90,73 @@ function CreateEvent() {
       {error && <p>{error}</p>}
 
       <form className="card" onSubmit={onSubmit}>
+        <label>Event Type</label>
         <select className="input" name="eventType" value={form.eventType} onChange={onChange}>
           <option value="Normal">Normal</option>
           <option value="Merchandise">Merchandise</option>
         </select>
-        <input className="input" name="name" placeholder="Event name" value={form.name} onChange={onChange} required />
-        <textarea className="input" name="description" placeholder="Description" value={form.description} onChange={onChange} required />
+
+        <label>Event Name</label>
+        <input className="input" name="name" value={form.name} onChange={onChange} required />
+
+        <label>Description</label>
+        <textarea className="input" name="description" value={form.description} onChange={onChange} required />
+
+        <label>Eligibility</label>
         <select className="input" name="eligibility" value={form.eligibility} onChange={onChange}>
           <option value="ALL">All</option>
           <option value="IIIT">IIIT</option>
           <option value="NON_IIIT">Non-IIIT</option>
         </select>
+
         <label>Registration Deadline</label>
         <input className="input" name="registrationDeadline" type="datetime-local" value={form.registrationDeadline} onChange={onChange} required />
-        <label>Start</label>
+
+        <label>Event Start (Date & Time)</label>
         <input className="input" name="eventStartDate" type="datetime-local" value={form.eventStartDate} onChange={onChange} required />
-        <label>End</label>
+
+        <label>Event End (Date & Time)</label>
         <input className="input" name="eventEndDate" type="datetime-local" value={form.eventEndDate} onChange={onChange} required />
+
+        <label>Registration / Purchase Limit</label>
         <input className="input" name="registrationLimit" type="number" min="1" value={form.registrationLimit} onChange={onChange} required />
-        <input className="input" name="eventTags" placeholder="Tags (comma separated)" value={form.eventTags} onChange={onChange} />
+
+        <label>Event Tags (comma separated)</label>
+        <input className="input" name="eventTags" value={form.eventTags} onChange={onChange} />
 
         {form.eventType === "Normal" ? (
           <>
-            <input className="input" name="registrationFee" type="number" min="0" value={form.registrationFee} onChange={onChange} placeholder="Registration Fee" />
+            <label>Registration Fee</label>
+            <input className="input" name="registrationFee" type="number" min="0" value={form.registrationFee} onChange={onChange} />
 
             <div style={{ marginTop: "15px", borderTop: "1px solid #ccc", paddingTop: "10px" }}>
               <h4>Custom Form Builder</h4>
               {customFields.map((field, index) => (
                 <div key={index} style={{ border: "1px solid #eee", padding: "10px", marginBottom: "10px", borderRadius: "5px" }}>
-                  <div style={{ display: "flex", gap: "10px", marginBottom: "5px" }}>
-                    <input className="input" placeholder="Field Label (e.g. T-Shirt Size)" value={field.label} onChange={(e) => updateCustomField(index, "label", e.target.value)} style={{ flex: 1 }} required />
-                    <select className="input" value={field.fieldType} onChange={(e) => updateCustomField(index, "fieldType", e.target.value)}>
-                      <option value="text">Text</option>
-                      <option value="dropdown">Dropdown</option>
-                      <option value="checkbox">Checkbox</option>
-                      <option value="file">File Upload</option>
-                    </select>
-                    <label style={{ display: "flex", alignItems: "center", gap: "5px" }}>
+                  <div style={{ display: "flex", gap: "10px", marginBottom: "5px", alignItems: "flex-end" }}>
+                    <div style={{ flex: 1 }}>
+                      <label>Field Name (e.g., T-Shirt Size)</label>
+                      <input className="input" value={field.label} onChange={(e) => updateCustomField(index, "label", e.target.value)} style={{ width: "100%", marginTop: "5px" }} required />
+                    </div>
+                    <div>
+                      <label>Type</label>
+                      <select className="input" value={field.fieldType} onChange={(e) => updateCustomField(index, "fieldType", e.target.value)} style={{ display: "block", marginTop: "5px" }}>
+                        <option value="text">Text</option>
+                        <option value="dropdown">Dropdown</option>
+                        <option value="checkbox">Checkbox</option>
+                        <option value="file">File Upload</option>
+                      </select>
+                    </div>
+                    <label style={{ display: "flex", alignItems: "center", gap: "5px", paddingBottom: "10px" }}>
                       <input type="checkbox" checked={field.required} onChange={(e) => updateCustomField(index, "required", e.target.checked)} /> Req
                     </label>
-                    <button type="button" className="button button-danger" onClick={() => removeCustomField(index)}>X</button>
+                    <button type="button" className="button button-danger" onClick={() => removeCustomField(index)} style={{ marginBottom: "5px" }}>X</button>
                   </div>
                   {(field.fieldType === "dropdown" || field.fieldType === "checkbox") && (
-                    <input className="input small" placeholder="Options (comma separated)" value={field.options.join(", ")} onChange={(e) => updateCustomField(index, "options", e.target.value)} />
+                    <div style={{ marginTop: "10px" }}>
+                      <label>Options (comma separated)</label>
+                      <input className="input small" value={field.options.join(", ")} onChange={(e) => updateCustomField(index, "options", e.target.value)} style={{ width: "100%", marginTop: "5px" }} />
+                    </div>
                   )}
                 </div>
               ))}
@@ -141,9 +165,14 @@ function CreateEvent() {
           </>
         ) : (
           <>
-            <input className="input" name="price" type="number" min="0" value={form.price} onChange={onChange} required placeholder="Price" />
-            <input className="input" name="stockQuantity" type="number" min="0" value={form.stockQuantity} onChange={onChange} required placeholder="Stock Quantity" />
-            <input className="input" name="purchaseLimit" type="number" min="1" value={form.purchaseLimit} onChange={onChange} placeholder="Max Purchase Limit" />
+            <label>Price</label>
+            <input className="input" name="price" type="number" min="0" value={form.price} onChange={onChange} required />
+
+            <label>Stock Quantity</label>
+            <input className="input" name="stockQuantity" type="number" min="0" value={form.stockQuantity} onChange={onChange} required />
+
+            <label>Max Purchase Limit (per user)</label>
+            <input className="input" name="purchaseLimit" type="number" min="1" value={form.purchaseLimit} onChange={onChange} />
           </>
         )}
 

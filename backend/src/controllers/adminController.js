@@ -52,12 +52,12 @@ function sanitizeOrganizer(organizer) {
 
 export async function createOrganizer(req, res) {
     try {
-        const { organizerName, category, description, contactEmail, phone } = req.body;
+        const { organizerName, category, description, contactEmail } = req.body;
 
-        if (!organizerName || !category || !description || !contactEmail || !phone) {
+        if (!organizerName || !category || !description || !contactEmail) {
             return sendError(
                 res,
-                "organizerName, category, description, contactEmail and phone are required",
+                "organizerName, category, description, and contactEmail are required",
                 "MISSING_FIELDS",
                 400,
             );
@@ -74,7 +74,6 @@ export async function createOrganizer(req, res) {
             category,
             description,
             contactEmail,
-            phone,
             accountStatus: "ACTIVE",
             accountStatusUpdatedAt: new Date(),
         });

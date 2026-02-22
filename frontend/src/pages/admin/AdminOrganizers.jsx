@@ -6,7 +6,6 @@ const emptyForm = {
   category: "CLUB",
   description: "",
   contactEmail: "",
-  phone: "",
 };
 
 function AdminOrganizers() {
@@ -82,7 +81,6 @@ function AdminOrganizers() {
         </select>
         <textarea className="input" placeholder="Description" value={form.description} onChange={(e) => setForm((p) => ({ ...p, description: e.target.value }))} required />
         <input className="input" type="email" placeholder="Contact email" value={form.contactEmail} onChange={(e) => setForm((p) => ({ ...p, contactEmail: e.target.value }))} required />
-        <input className="input" placeholder="Phone" value={form.phone} onChange={(e) => setForm((p) => ({ ...p, phone: e.target.value }))} required />
         <button className="button" type="submit">Create</button>
       </form>
 
