@@ -3,7 +3,7 @@ import api, { getApiErrorMessage } from "../services/api";
 import { io } from "socket.io-client";
 
 // In a real app, you'd want this in an env var. We use window.location for simplicity to point to backend.
-const SOCKET_URL = import.meta.env.VITE_API_URL ? import.meta.env.VITE_API_URL.replace('/api', '') : 'http://localhost:5000';
+const SOCKET_URL = import.meta.env.VITE_API_BASE_URL ? import.meta.env.VITE_API_BASE_URL.replace('/api', '') : 'http://localhost:3000';
 
 function Forum({ eventId, currentUserRole }) {
     const [messages, setMessages] = useState([]);

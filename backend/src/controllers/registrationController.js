@@ -51,6 +51,7 @@ function formatRegistrationRecord(registration) {
         id: registration._id,
         ticketId: registration.ticketId || registration._id,
         ticketRef: registration.ticketId ? `/api/registrations/ticket/${registration.ticketId}` : `/api/registrations/${registration._id}`,
+        eventId: registration.eventId?._id || registration.eventId,
         eventName: registration.eventId?.name,
         eventType: registration.eventId?.eventType,
         organizer: registration.eventId?.organizerId?.organizerName || registration.ticketSnapshot?.organizerName,
@@ -63,6 +64,7 @@ function formatRegistrationRecord(registration) {
         quantity: registration.quantity,
         paymentStatus: registration.paymentStatus,
         qrCodeDataUrl: registration.qrCodeDataUrl,
+        feedbackSubmitted: registration.feedbackSubmitted,
         details: registration,
     };
 }
@@ -473,5 +475,42 @@ export async function cancelRegistration(req, res) {
 
     } finally {
         session.endSession();
+    }
+}
+
+export async function updateAttendanceStatus(req, res) {
+    try {
+        const registrationId = req.params.id;
+        const { status } = req.body;
+
+        if (!["Registered", "Attended"].includes(status)) {
+            return sendError(res, "Invalid attendance status. Must be 'Registered' or 'Attended'.", "INVALID_STATUS", 400);
+        }
+
+        const registration = await Registration.findById(registrationId).populate("eventId");
+        if (!registration) {
+            return sendError(res, "Registration not found", "NOT_FOUND", 404);
+        }
+
+        const event = registration.eventId;
+        if (!event) {
+            return sendError(res, "Associated event not found", "NOT_FOUND", 404);
+        }
+
+        if (event.organizerId.toString() !== req.user.id) {
+            return sendError(res, "Access denied: You do not own this event", "UNAUTHORIZED", 403);
+        }
+
+        if (!["Registered", "Attended"].includes(registration.status)) {
+            return sendError(res, `Cannot update attendance for a registration with status: ${registration.status}`, "INVALID_CURRENT_STATUS", 400);
+        }
+
+        registration.status = status;
+        await registration.save();
+
+        return sendSuccess(res, `Attendance status updated to ${status}`, formatRegistrationRecord(registration), 200);
+
+    } catch (error) {
+        return sendError(res, "Failed to update attendance status", error.message, 500);
     }
 }

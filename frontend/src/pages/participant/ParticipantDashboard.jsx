@@ -66,7 +66,13 @@ function ParticipantDashboard() {
           <tbody>
             {rows.map((row) => (
               <tr key={row.id || row.ticketId}>
-                <td>{row.eventName}</td>
+                <td>
+                  {row.eventId ? (
+                    <Link to={`/participant/events/${row.eventId}`}>{row.eventName}</Link>
+                  ) : (
+                    row.eventName
+                  )}
+                </td>
                 <td>{row.eventType}</td>
                 <td>{row.organizer}</td>
                 <td>{row.participationStatus}</td>

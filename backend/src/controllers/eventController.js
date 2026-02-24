@@ -279,7 +279,7 @@ async function getFilteredEvents(req, { requireParticipant = false } = {}) {
     const searchQuery = search || q || "";
 
     const query = {
-        status: { $in: ["Published", "Ongoing"] },
+        status: { $in: ["Published", "Ongoing", "Completed"] },
     };
 
     if (eventType) {

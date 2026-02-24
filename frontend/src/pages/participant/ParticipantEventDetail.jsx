@@ -137,16 +137,16 @@ function ParticipantEventDetail() {
 
   return (
     <div className="page">
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-        <h2>{event.name}</h2>
-        <div style={{ display: "flex", gap: "10px" }}>
+      <div className="card">
+        <h3>{event.name}</h3>
+        <div style={{ display: "flex", gap: "10px", marginTop: "10px" }}>
           <button
             className={`button ${activeTab === 'Details' ? '' : 'button-secondary'}`}
             onClick={() => setActiveTab('Details')}
           >
-            Event Details
+            Details
           </button>
-          {(event.availability?.canRegister || event.status === "Ongoing") && (
+          {myRegistration && ['Registered', 'Attended'].includes(myRegistration.participationStatus) && (
             <button
               className={`button ${activeTab === 'Discussion' ? '' : 'button-secondary'}`}
               onClick={() => setActiveTab('Discussion')}
@@ -286,7 +286,7 @@ function ParticipantEventDetail() {
           )}
 
           {/* Feedback Section */}
-          {myRegistration?.status === "Attended" && (
+          {myRegistration?.participationStatus === "Attended" && (
             <div className="card" style={{ marginTop: "20px", border: "1px solid #4CAF50" }}>
               <h4 style={{ color: "#4CAF50", marginTop: 0 }}>Event Feedback</h4>
               {myRegistration.feedbackSubmitted ? (

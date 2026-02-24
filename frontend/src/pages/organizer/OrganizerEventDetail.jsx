@@ -137,6 +137,16 @@ function OrganizerEventDetail() {
     }
   };
 
+  const updateAttendance = async (registrationId, currentStatus) => {
+    try {
+      const newStatus = currentStatus === "Attended" ? "Registered" : "Attended";
+      await api.patch(`/registrations/${registrationId}/attendance`, { status: newStatus });
+      fetchDetail();
+    } catch (err) {
+      alert(getApiErrorMessage(err, "Failed to update attendance"));
+    }
+  };
+
   if (!data) return <div className="page">{error ? <p>{error}</p> : <p>Loading...</p>}</div>;
 
   const overview = data.overview;
@@ -255,6 +265,7 @@ function OrganizerEventDetail() {
                   <th>Payment</th>
                   <th>Team</th>
                   <th>Attendance</th>
+                  <th>Actions</th>
                 </tr>
               </thead>
               <tbody>
@@ -265,12 +276,30 @@ function OrganizerEventDetail() {
                     <td>{p.registrationDate ? new Date(p.registrationDate).toLocaleString() : "-"}</td>
                     <td>{p.paymentStatus}</td>
                     <td>{p.teamName}</td>
-                    <td>{p.attendanceStatus}</td>
+                    <td>
+                      <span style={{
+                        color: p.attendanceStatus === 'Attended' ? '#4CAF50' : '#f44336',
+                        fontWeight: p.attendanceStatus === 'Attended' ? 'bold' : 'normal'
+                      }}>
+                        {p.attendanceStatus}
+                      </span>
+                    </td>
+                    <td>
+                      {['Not Attended', 'Attended', 'Registered'].includes(p.attendanceStatus) && (
+                        <button
+                          className={`button ${p.attendanceStatus === 'Attended' ? 'button-secondary' : 'button-success'}`}
+                          style={{ padding: "5px 10px", fontSize: "0.85em", backgroundColor: p.attendanceStatus === 'Attended' ? '#f44336' : '#4CAF50', color: 'white', border: 'none' }}
+                          onClick={() => updateAttendance(p.registrationId, p.attendanceStatus)}
+                        >
+                          {p.attendanceStatus === "Attended" ? "Revoke" : "Mark Attended"}
+                        </button>
+                      )}
+                    </td>
                   </tr>
                 ))}
                 {!data.participants?.records?.length && (
                   <tr>
-                    <td colSpan="6">No participants found</td>
+                    <td colSpan="7">No participants found</td>
                   </tr>
                 )}
               </tbody>
