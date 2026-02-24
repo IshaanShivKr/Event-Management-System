@@ -98,9 +98,14 @@ export async function registerForEvent(req, res) {
             return sendError(res, "Event not found", "NOT_FOUND", 404);
         }
 
-        if (event.status !== "Published") {
+        if (event.eventType === "Normal" && event.status !== "Published") {
             await session.abortTransaction();
             return sendError(res, `Registrations are currently ${event.status.toLowerCase()}`, "REGISTRATION_UNAVAILABLE", 400);
+        }
+
+        if (event.eventType === "Merchandise" && event.status !== "Ongoing") {
+            await session.abortTransaction();
+            return sendError(res, `Merchandise purchases are currently ${event.status.toLowerCase()}`, "PURCHASE_UNAVAILABLE", 400);
         }
 
         if (event.eligibility !== "ALL" && event.eligibility !== participant.participantType) {
@@ -152,8 +157,8 @@ export async function registerForEvent(req, res) {
                 await session.abortTransaction();
                 return sendError(res, "Not enough stock available to fulfill this request.", "STOCK_EXHAUSTED", 400);
             }
-            price = merchEvent.price || 0;
-            totalCalculatedPrice = price * parsedQuantity;
+            const price = merchEvent.price || 0;
+            const totalCalculatedPrice = price * parsedQuantity;
         }
 
         registration = existing || new Registration({ eventId, participantId });
