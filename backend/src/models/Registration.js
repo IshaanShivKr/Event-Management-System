@@ -11,6 +11,10 @@ const registrationSchema = new mongoose.Schema({
         ref: "User",
         required: true,
     },
+    teamId: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "Team",
+    },
     responses: [{
         fieldId: mongoose.Schema.Types.ObjectId,
         label: String,
@@ -27,7 +31,7 @@ const registrationSchema = new mongoose.Schema({
     },
     status: {
         type: String,
-        enum: ["Registered", "Cancelled", "Rejected", "Waitlisted", "Attended"],
+        enum: ["Pending", "Registered", "Cancelled", "Rejected", "Waitlisted", "Attended"],
         default: "Registered",
     },
     paymentStatus: {
@@ -37,6 +41,9 @@ const registrationSchema = new mongoose.Schema({
     },
     transactionId: {
         type: String,
+    },
+    paymentProof: {
+        type: String, // Base64 image
     },
     ticketId: {
         type: String,
@@ -57,6 +64,10 @@ const registrationSchema = new mongoose.Schema({
         type: Boolean,
         default: false,
     },
+    feedbackSubmitted: {
+        type: Boolean,
+        default: false,
+    }
 }, { timestamps: true });
 
 registrationSchema.index({ eventId: 1, participantId: 1 }, { unique: true });

@@ -35,12 +35,16 @@ const DRAFT_EDITABLE_FIELDS = new Set([
     "price",
     "stockQuantity",
     "purchaseLimit",
+    "minTeamSize",
+    "maxTeamSize",
 ]);
 
 const PUBLISHED_EDITABLE_FIELDS = new Set([
     "description",
     "registrationDeadline",
     "registrationLimit",
+    "minTeamSize",
+    "maxTeamSize",
 ]);
 
 function normalizeText(value = "") {
@@ -454,6 +458,7 @@ function buildParticipantRows(registrations) {
             status: registration.status,
             quantity: Number(registration.quantity || 1),
             transactionId: registration.transactionId || "",
+            paymentProof: registration.paymentProof || "",
         };
     });
 }
@@ -621,6 +626,8 @@ export async function createEvent(req, res) {
                 eventTags,
                 registrationFee,
                 customFormFields = [],
+                minTeamSize = 1,
+                maxTeamSize = 1,
             } = eventData;
 
             newEvent = new NormalEvent({
@@ -634,6 +641,8 @@ export async function createEvent(req, res) {
                 eventTags,
                 registrationFee,
                 customFormFields: Array.isArray(customFormFields) ? customFormFields : [],
+                minTeamSize,
+                maxTeamSize,
                 organizerId,
                 status: "Draft",
             });

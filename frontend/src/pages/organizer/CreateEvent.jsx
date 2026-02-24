@@ -129,6 +129,17 @@ function CreateEvent() {
             <label>Registration Fee</label>
             <input className="input" name="registrationFee" type="number" min="0" value={form.registrationFee} onChange={onChange} />
 
+            <div style={{ display: "flex", gap: "10px", marginTop: "10px" }}>
+              <div style={{ flex: 1 }}>
+                <label>Min Team Size</label>
+                <input className="input" name="minTeamSize" type="number" min="1" value={form.minTeamSize || 1} onChange={onChange} />
+              </div>
+              <div style={{ flex: 1 }}>
+                <label>Max Team Size ( &gt;1 for Team Events )</label>
+                <input className="input" name="maxTeamSize" type="number" min="1" value={form.maxTeamSize || 1} onChange={onChange} required />
+              </div>
+            </div>
+
             <div style={{ marginTop: "15px", borderTop: "1px solid #ccc", paddingTop: "10px" }}>
               <h4>Custom Form Builder</h4>
               {customFields.map((field, index) => (

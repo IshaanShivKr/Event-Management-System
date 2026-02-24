@@ -1,6 +1,7 @@
 import { Navigate, Route, Routes } from "react-router-dom";
 import Login from "./pages/Login";
 import Register from "./pages/Register";
+import RequestReset from "./pages/RequestReset";
 import HomeRedirect from "./pages/HomeRedirect";
 import NotFound from "./pages/NotFound";
 import ProtectedRoute from "./components/ProtectedRoute";
@@ -12,6 +13,7 @@ import ClubsPage from "./pages/participant/ClubsPage";
 import ParticipantOrganizerDetail from "./pages/participant/ParticipantOrganizerDetail";
 import ParticipantProfile from "./pages/participant/ParticipantProfile";
 import TicketDetail from "./pages/participant/TicketDetail";
+import TeamDashboard from "./pages/participant/TeamDashboard";
 import OrganizerDashboard from "./pages/organizer/OrganizerDashboard";
 import CreateEvent from "./pages/organizer/CreateEvent";
 import OngoingEvents from "./pages/organizer/OngoingEvents";
@@ -27,6 +29,7 @@ function App() {
       <Route path="/" element={<HomeRedirect />} />
       <Route path="/login" element={<Login />} />
       <Route path="/register" element={<Register />} />
+      <Route path="/request-reset" element={<RequestReset />} />
 
       <Route element={<ProtectedRoute allowedRoles={["Participant"]} />}>
         <Route
@@ -37,6 +40,7 @@ function App() {
               navItems={[
                 { to: "/participant/dashboard", label: "Dashboard" },
                 { to: "/participant/browse", label: "Browse Events" },
+                { to: "/participant/teams", label: "My Teams" },
                 { to: "/participant/clubs", label: "Clubs/Organizers" },
                 { to: "/participant/profile", label: "Profile" },
               ]}
@@ -48,6 +52,7 @@ function App() {
           <Route path="browse" element={<BrowseEvents />} />
           <Route path="events/:eventId" element={<ParticipantEventDetail />} />
           <Route path="clubs" element={<ClubsPage />} />
+          <Route path="teams" element={<TeamDashboard />} />
           <Route path="organizers/:organizerId" element={<ParticipantOrganizerDetail />} />
           <Route path="profile" element={<ParticipantProfile />} />
           <Route path="ticket/:ticketId" element={<TicketDetail />} />

@@ -140,32 +140,7 @@ export async function deleteMyAccount(req, res) {
     }
 }
 
-export async function requestPasswordReset(req, res) {
-    try {
-        if (req.user.role !== "Organizer") {
-            return sendError(res, "Only organizers can request a password reset from admin", "UNAUTHORIZED_ROLE", 403);
-        }
 
-        const { reason } = req.body;
-        const user = await User.findById(req.user.id);
-        if (!user) {
-            return sendError(res, "User not found", "NOT_FOUND", 404);
-        }
-
-        user.resetRequested = true;
-        user.resetRequestStatus = "Pending";
-        user.resetRequestedAt = new Date();
-        user.resetResolvedAt = null;
-        user.resetResolutionComment = undefined;
-        user.resetReason = reason || "Forgotten Password";
-        await user.save();
-
-        return sendSuccess(res, "Request sent to Admin. Please wait for approval.", null, 200);
-
-    } catch (error) {
-        return sendError(res, "Failed to submit request", error.message, 500);
-    }
-}
 
 export async function getAllOrganizers(req, res) {
     try {

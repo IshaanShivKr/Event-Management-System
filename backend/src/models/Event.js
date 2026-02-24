@@ -49,6 +49,14 @@ const eventSchema = new mongoose.Schema({
     eventTags: {
         type: [String],
     },
+    minTeamSize: {
+        type: Number,
+        default: 1,
+    },
+    maxTeamSize: {
+        type: Number,
+        default: 1,
+    }
 }, baseOptions);
 
 const Event = mongoose.model("Event", eventSchema);

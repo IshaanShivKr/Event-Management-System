@@ -64,6 +64,9 @@ function Login() {
             {loading ? "Logging in..." : "Login"}
           </button>
         </form>
+        <p className="muted" style={{ marginBottom: "10px" }}>
+          Forgot Password? (Organizers Only) <Link to="/request-reset">Request Reset</Link>
+        </p>
         <p className="muted">
           Don't have an account? <Link to="/register">Create account</Link>
         </p>

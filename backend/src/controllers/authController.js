@@ -28,9 +28,9 @@ export async function registerParticipant(req, res) {
         const refreshToken = await generateRefreshToken(newParticipant);
 
         return sendSuccess(res, "Registration successful", {
-            accessToken, refreshToken, role: "Participant", user: {email: newParticipant.email, id: newParticipant._id }
+            accessToken, refreshToken, role: "Participant", user: { email: newParticipant.email, id: newParticipant._id }
         }, 201);
-    
+
     } catch (error) {
         if (error.code === 11000) {
             return sendError(res, "Email already registered.", "EMAIL_EXISTS", 400);
@@ -101,5 +101,38 @@ export async function refreshToken(req, res) {
 
     } catch (error) {
         return sendError(res, "Invalid or expired refresh token", error.message, 403);
+    }
+}
+
+export async function requestPasswordReset(req, res) {
+    try {
+        const { email, reason } = req.body;
+
+        if (!email) {
+            return sendError(res, "Email is required", "MISSING_EMAIL", 400);
+        }
+
+        const user = await User.findOne({ email });
+
+        // Don't leak if user exists or not if they are a participant for security, 
+        // but since this is assigned to Organizer we can enforce role.
+        if (!user || user.role !== "Organizer") {
+            // For security, you might want to return success anyway to prevent email enumeration,
+            // but for a clear UI experience here, we'll return an error if not found/not organizer.
+            return sendError(res, "Cannot request reset for this account. Only Organizers can request Admin resets.", "INVALID_ACCOUNT", 400);
+        }
+
+        user.resetRequested = true;
+        user.resetRequestStatus = "Pending";
+        user.resetRequestedAt = new Date();
+        user.resetResolvedAt = null;
+        user.resetResolutionComment = undefined;
+        user.resetReason = reason || "Forgotten Password";
+        await user.save();
+
+        return sendSuccess(res, "Password reset request sent to Admin. Please wait for temporary credentials.", null, 200);
+
+    } catch (error) {
+        return sendError(res, "Failed to submit request", error.message, 500);
     }
 }

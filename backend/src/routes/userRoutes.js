@@ -4,7 +4,6 @@ import {
     updateProfile,
     updatePassword,
     deleteMyAccount,
-    requestPasswordReset,
     getAllOrganizers,
     getOrganizerById,
     followOrganizer,
@@ -25,8 +24,6 @@ userRoutes.put("/profile", updateProfile);
 userRoutes.patch("/update-password", updatePassword);
 
 userRoutes.delete("/delete-me", deleteMyAccount);
-
-userRoutes.post("/request-reset", requestPasswordReset);
 
 userRoutes.post("/follow/:id", authorize("Participant"), followOrganizer);
 userRoutes.post("/unfollow/:id", authorize("Participant"), unfollowOrganizer);

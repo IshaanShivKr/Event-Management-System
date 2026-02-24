@@ -10,6 +10,42 @@ import { sendTicketConfirmationEmail } from "../utils/emailService.js";
 
 const ACTIVE_REGISTRATION_STATUSES = ["Registered", "Waitlisted", "Attended"];
 
+export async function finalizeRegistrationTicket({ registration, participant, event, session }) {
+    const ticketBundle = await generateTicketBundle({
+        event,
+        participant,
+        registrationId: registration._id,
+        organizerName: event.organizerId?.organizerName,
+    });
+
+    registration.ticketId = ticketBundle.ticketId;
+    registration.qrCodeDataUrl = ticketBundle.qrCodeDataUrl;
+    registration.ticketSnapshot = ticketBundle.ticketSnapshot;
+    registration.confirmationEmailSent = false;
+
+    await registration.save({ session });
+
+    // Assuming session commits later or we don't have one if called post-transaction
+    // The email sending happens after the save.
+}
+
+export async function sendConfirmationEmail(registrationId, participant, event) {
+    try {
+        const registration = await Registration.findById(registrationId);
+        const emailResult = await sendTicketConfirmationEmail({
+            participant,
+            event,
+            registration,
+        });
+
+        if (emailResult.sent) {
+            await Registration.findByIdAndUpdate(registration._id, { confirmationEmailSent: true });
+        }
+    } catch (emailError) {
+        console.error("Ticket email failed:", emailError.message);
+    }
+}
+
 function formatRegistrationRecord(registration) {
     return {
         id: registration._id,
@@ -40,7 +76,7 @@ export async function registerForEvent(req, res) {
     let event;
 
     try {
-        const { eventId, responses, selections, quantity = 1, transactionId } = req.body;
+        const { eventId, responses, selections, quantity = 1, transactionId, paymentProof } = req.body;
         const participantId = req.user.id;
         const parsedQuantity = Math.max(1, Number(quantity) || 1);
 
@@ -108,19 +144,16 @@ export async function registerForEvent(req, res) {
                 );
             }
 
-            const updatedMerch = await MerchandiseEvent.findOneAndUpdate(
-                { _id: eventId, stockQuantity: { $gte: parsedQuantity } },
-                { $inc: { stockQuantity: -parsedQuantity } },
-                { new: true, session },
-            );
-
-            if (!updatedMerch) {
+            // We do NOT decrement stock here anymore. It's decremented upon organizer approval.
+            const merchEvent = await MerchandiseEvent.findById(eventId).session(session);
+            if (!merchEvent || merchEvent.stockQuantity < parsedQuantity) {
                 await session.abortTransaction();
-                return sendError(res, "Stock depleted or insufficient quantity.", "STOCK_EXHAUSTED", 400);
+                return sendError(res, "Not enough stock available to fulfill this request.", "STOCK_EXHAUSTED", 400);
             }
+            price = merchEvent.price || 0;
+            totalCalculatedPrice = price * parsedQuantity;
         }
 
-        const price = event.price ?? event.registrationFee ?? 0;
         registration = existing || new Registration({ eventId, participantId });
 
         let processedResponses = [];
@@ -141,23 +174,27 @@ export async function registerForEvent(req, res) {
         registration.responses = processedResponses;
         registration.selections = event.eventType === "Merchandise" ? (selections || {}) : undefined;
         registration.quantity = event.eventType === "Merchandise" ? parsedQuantity : 1;
-        registration.status = "Registered";
-        registration.paymentStatus = price > 0 ? "Completed" : "N/A";
         registration.transactionId = transactionId || registration.transactionId;
 
-        const ticketBundle = await generateTicketBundle({
-            event,
-            participant,
-            registrationId: registration._id,
-            organizerName: event.organizerId?.organizerName,
-        });
+        if (event.eventType === "Merchandise") {
+            registration.status = "Pending";
+            registration.paymentStatus = "Pending";
+            registration.paymentProof = paymentProof; // Save base64 image 
+            await registration.save({ session });
+            await session.commitTransaction();
 
-        registration.ticketId = ticketBundle.ticketId;
-        registration.qrCodeDataUrl = ticketBundle.qrCodeDataUrl;
-        registration.ticketSnapshot = ticketBundle.ticketSnapshot;
-        registration.confirmationEmailSent = false;
+            const savedRegistration = await Registration.findById(registration._id)
+                .populate({
+                    path: "eventId",
+                    populate: { path: "organizerId", select: "organizerName category description contactEmail" },
+                });
+            return sendSuccess(res, "Merchandise order placed. Pending organizer approval.", formatRegistrationRecord(savedRegistration), 201);
+        }
 
-        await registration.save({ session });
+        registration.status = "Registered";
+        registration.paymentStatus = (event.price ?? event.registrationFee ?? 0) > 0 ? "Completed" : "N/A";
+
+        await finalizeRegistrationTicket({ registration, participant, event, session });
         await session.commitTransaction();
 
     } catch (error) {
@@ -172,20 +209,7 @@ export async function registerForEvent(req, res) {
         session.endSession();
     }
 
-    try {
-        const emailResult = await sendTicketConfirmationEmail({
-            participant,
-            event,
-            registration,
-        });
-
-        if (emailResult.sent) {
-            await Registration.findByIdAndUpdate(registration._id, { confirmationEmailSent: true });
-            registration.confirmationEmailSent = true;
-        }
-    } catch (emailError) {
-        console.error("Ticket email failed:", emailError.message);
-    }
+    await sendConfirmationEmail(registration._id, participant, event);
 
     const savedRegistration = await Registration.findById(registration._id)
         .populate({
@@ -194,6 +218,93 @@ export async function registerForEvent(req, res) {
         });
 
     return sendSuccess(res, "Registration successful", formatRegistrationRecord(savedRegistration), 201);
+}
+
+export async function approveMerchandiseOrder(req, res) {
+    const session = await mongoose.startSession();
+    session.startTransaction();
+
+    try {
+        const { id } = req.params;
+        const organizerId = req.user.id;
+
+        const registration = await Registration.findById(id).populate("eventId").session(session);
+        if (!registration || registration.eventId.eventType !== "Merchandise") {
+            await session.abortTransaction();
+            return sendError(res, "Invalid merchandise registration", "NOT_FOUND", 404);
+        }
+
+        if (String(registration.eventId.organizerId) !== String(organizerId)) {
+            await session.abortTransaction();
+            return sendError(res, "Unauthorized", "UNAUTHORIZED", 403);
+        }
+
+        if (registration.status !== "Pending") {
+            await session.abortTransaction();
+            return sendError(res, "Order is not pending approval", "INVALID_STATE", 400);
+        }
+
+        const merchEvent = await MerchandiseEvent.findById(registration.eventId._id).session(session);
+        if (merchEvent.stockQuantity < registration.quantity) {
+            await session.abortTransaction();
+            return sendError(res, "Not enough stock to approve this order", "STOCK_EXHAUSTED", 400);
+        }
+
+        // Deduct stock
+        merchEvent.stockQuantity -= registration.quantity;
+        await merchEvent.save({ session });
+
+        // Update registration
+        registration.status = "Registered";
+        registration.paymentStatus = "Completed";
+
+        const participant = await Participant.findById(registration.participantId).session(session).lean();
+        const event = await Event.findById(registration.eventId._id).populate("organizerId", "organizerName").session(session).lean();
+
+        await finalizeRegistrationTicket({ registration, participant, event, session });
+        await session.commitTransaction();
+
+        // Send confirmation email post-transaction
+        await sendConfirmationEmail(registration._id, participant, event);
+
+        return sendSuccess(res, "Order approved and ticket generated", formatRegistrationRecord(registration), 200);
+
+    } catch (error) {
+        if (session.inTransaction()) {
+            await session.abortTransaction();
+        }
+        return sendError(res, "Failed to approve order", error.message, 500);
+    } finally {
+        session.endSession();
+    }
+}
+
+export async function rejectMerchandiseOrder(req, res) {
+    try {
+        const { id } = req.params;
+        const organizerId = req.user.id;
+
+        const registration = await Registration.findById(id).populate("eventId");
+        if (!registration || registration.eventId.eventType !== "Merchandise") {
+            return sendError(res, "Invalid merchandise registration", "NOT_FOUND", 404);
+        }
+
+        if (String(registration.eventId.organizerId) !== String(organizerId)) {
+            return sendError(res, "Unauthorized", "UNAUTHORIZED", 403);
+        }
+
+        if (registration.status !== "Pending") {
+            return sendError(res, "Order is not pending approval", "INVALID_STATE", 400);
+        }
+
+        registration.status = "Rejected";
+        // Do not touch stock, as it was never decremented
+        await registration.save();
+
+        return sendSuccess(res, "Order rejected", formatRegistrationRecord(registration), 200);
+    } catch (error) {
+        return sendError(res, "Failed to reject order", error.message, 500);
+    }
 }
 
 export async function getMyRegistrations(req, res) {

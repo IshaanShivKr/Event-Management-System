@@ -1,6 +1,7 @@
 import { useContext } from "react";
 import { NavLink, Outlet, useNavigate } from "react-router-dom";
 import { AuthContext } from "../context/AuthContext";
+import NotificationsBell from "./NotificationsBell";
 
 function RoleLayout({ title, navItems }) {
   const { logout, user } = useContext(AuthContext);
@@ -18,7 +19,8 @@ function RoleLayout({ title, navItems }) {
           <h1>{title}</h1>
           <p className="muted">{user?.email || ""}</p>
         </div>
-        <nav className="nav">
+        <nav className="nav" style={{ display: "flex", alignItems: "center" }}>
+          <NotificationsBell role={user?.role} />
           {navItems.map((item) => (
             <NavLink
               key={item.to}

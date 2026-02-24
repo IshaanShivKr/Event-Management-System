@@ -5,7 +5,9 @@ import {
     getRegistrationById,
     getRegistrationByTicketId,
     getEventAttendees,
-    cancelRegistration
+    cancelRegistration,
+    approveMerchandiseOrder,
+    rejectMerchandiseOrder
 } from "../controllers/registrationController.js";
 import { protect, authorize } from "../middleware/authMiddleware.js";
 
@@ -19,5 +21,8 @@ registrationRoutes.get("/ticket/:ticketId", protect, authorize("Participant"), g
 registrationRoutes.get("/:id", protect, authorize("Participant"), getRegistrationById);
 
 registrationRoutes.delete("/cancel/:id", protect, authorize("Participant"), cancelRegistration);
+
+registrationRoutes.post("/approve-merch/:id", protect, authorize("Organizer"), approveMerchandiseOrder);
+registrationRoutes.post("/reject-merch/:id", protect, authorize("Organizer"), rejectMerchandiseOrder);
 
 export default registrationRoutes;
