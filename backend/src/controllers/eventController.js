@@ -13,7 +13,7 @@ const REGISTRABLE_STATUSES = ["Published"];
 
 const STATUS_TRANSITIONS = {
     Draft: new Set(["Draft", "Published", "Closed"]),
-    Published: new Set(["Published", "Ongoing", "Closed"]),
+    Published: new Set(["Published", "Ongoing", "Completed", "Closed"]),
     Ongoing: new Set(["Ongoing", "Completed", "Closed"]),
     Completed: new Set(["Completed", "Closed"]),
     Closed: new Set(["Closed"]),

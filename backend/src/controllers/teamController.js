@@ -90,7 +90,8 @@ export async function joinTeam(req, res) {
 
         // If completed, trigger registration and ticket generation for ALL members
         if (team.status === "Completed") {
-            for (const memberId of team.members) {
+            const event = await Event.findById(eventId).populate("organizerId");
+            const registrationPromises = team.members.map(async (memberId) => {
                 const participant = await Participant.findById(memberId);
                 const reg = new Registration({
                     eventId,
@@ -102,7 +103,10 @@ export async function joinTeam(req, res) {
 
                 await finalizeRegistrationTicket({ registration: reg, participant, event });
                 await sendConfirmationEmail(reg._id, participant, event);
-            }
+                return reg;
+            });
+
+            await Promise.all(registrationPromises);
         }
 
         return sendSuccess(res, "Joined team successfully", { team }, 200);

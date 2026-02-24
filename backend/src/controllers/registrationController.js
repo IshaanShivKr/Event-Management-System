@@ -59,7 +59,7 @@ function formatRegistrationRecord(registration) {
             start: registration.eventId?.eventStartDate,
             end: registration.eventId?.eventEndDate,
         },
-        teamName: registration.responses?.find((field) => (field.label || "").toLowerCase().includes("team"))?.value || "Individual",
+        teamName: registration.teamId?.name || registration.responses?.find((field) => (field.label || "").toLowerCase().includes("team"))?.value || "Individual",
         quantity: registration.quantity,
         paymentStatus: registration.paymentStatus,
         qrCodeDataUrl: registration.qrCodeDataUrl,
@@ -321,6 +321,7 @@ export async function getMyRegistrations(req, res) {
                     select: "organizerName category",
                 },
             })
+            .populate("teamId", "name")
             .sort({ createdAt: -1 });
 
         if (tab === "upcoming") {
@@ -356,7 +357,8 @@ export async function getRegistrationById(req, res) {
             .populate({
                 path: "eventId",
                 populate: { path: "organizerId", select: "organizerName category description contactEmail" },
-            });
+            })
+            .populate("teamId", "name");
 
         if (!registration) {
             return sendError(res, "Registration record not found", "NOT_FOUND", 404);
@@ -377,7 +379,7 @@ export async function getRegistrationByTicketId(req, res) {
         }).populate({
             path: "eventId",
             populate: { path: "organizerId", select: "organizerName category description contactEmail" },
-        });
+        }).populate("teamId", "name");
 
         if (!registration) {
             return sendError(res, "Ticket not found", "NOT_FOUND", 404);

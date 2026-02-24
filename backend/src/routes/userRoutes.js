@@ -7,7 +7,8 @@ import {
     getAllOrganizers,
     getOrganizerById,
     followOrganizer,
-    unfollowOrganizer
+    unfollowOrganizer,
+    requestPasswordReset
 } from "../controllers/userController.js";
 import { protect, authorize } from "../middleware/authMiddleware.js";
 
@@ -27,5 +28,7 @@ userRoutes.delete("/delete-me", deleteMyAccount);
 
 userRoutes.post("/follow/:id", authorize("Participant"), followOrganizer);
 userRoutes.post("/unfollow/:id", authorize("Participant"), unfollowOrganizer);
+
+userRoutes.post("/request-reset", requestPasswordReset);
 
 export default userRoutes;

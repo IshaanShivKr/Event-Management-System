@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import api, { getApiErrorMessage } from "../../services/api";
 
 function BrowseEvents() {
@@ -43,11 +43,25 @@ function BrowseEvents() {
     fetchEvents();
   }, []);
 
+  const navigate = useNavigate();
+
   const registerEvent = async (event) => {
+    const hasCustomForm = event.customFormFields && event.customFormFields.length > 0;
+    const isMerch = event.eventType === "Merchandise";
+    const isTeam = event.maxTeamSize > 1;
+
+    // Route to details page if interaction is required: 
+    // - Team events require creating/joining a team
+    // - Merchandise events require quantity and payment proof
+    // - Custom forms require filling required fields
+    if (isTeam || isMerch || hasCustomForm) {
+      navigate(`/participant/events/${event._id}`);
+      return;
+    }
+
     try {
       await api.post("/registrations/register", {
         eventId: event._id,
-        quantity: event.eventType === "Merchandise" ? 1 : undefined,
       });
       alert("Registered successfully");
     } catch (err) {

@@ -131,15 +131,39 @@ export async function deleteMyAccount(req, res) {
                 );
             }
         }
-
-        await User.findByIdAndDelete(userId);
-        return sendSuccess(res, "Account deleted successfully", null, 200);
-
+        const user = await User.findByIdAndDelete(userId);
+        return sendSuccess(res, "Account deleted successfully");
     } catch (error) {
-        return sendError(res, "Account deletion failed", error.message, 500);
+        return sendError(res, "Failed to delete account", error.message, 500);
     }
 }
 
+export async function requestPasswordReset(req, res) {
+    try {
+        const { reason } = req.body;
+        const { role, id } = req.user;
+
+        if (role !== "Organizer") {
+            return sendError(res, "Only Organizers can request a password reset via this endpoint", "FORBIDDEN", 403);
+        }
+
+        const organizer = await Organizer.findById(id);
+        if (!organizer) {
+            return sendError(res, "Organizer not found", "NOT_FOUND", 404);
+        }
+
+        organizer.resetRequested = true;
+        organizer.resetRequestStatus = "Pending";
+        organizer.resetReason = reason || "User requested reset from profile";
+        organizer.resetRequestedAt = new Date();
+
+        await organizer.save();
+
+        return sendSuccess(res, "Password reset request submitted successfully");
+    } catch (error) {
+        return sendError(res, "Failed to submit reset request", error.message, 500);
+    }
+}
 
 
 export async function getAllOrganizers(req, res) {

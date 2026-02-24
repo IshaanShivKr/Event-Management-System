@@ -14,6 +14,7 @@ import ParticipantOrganizerDetail from "./pages/participant/ParticipantOrganizer
 import ParticipantProfile from "./pages/participant/ParticipantProfile";
 import TicketDetail from "./pages/participant/TicketDetail";
 import TeamDashboard from "./pages/participant/TeamDashboard";
+import Onboarding from "./pages/participant/Onboarding";
 import OrganizerDashboard from "./pages/organizer/OrganizerDashboard";
 import CreateEvent from "./pages/organizer/CreateEvent";
 import OngoingEvents from "./pages/organizer/OngoingEvents";
@@ -57,6 +58,8 @@ function App() {
           <Route path="profile" element={<ParticipantProfile />} />
           <Route path="ticket/:ticketId" element={<TicketDetail />} />
         </Route>
+        {/* Onboarding doesn't need the RoleLayout wrapper */}
+        <Route path="/participant/onboarding" element={<Onboarding />} />
       </Route>
 
       <Route element={<ProtectedRoute allowedRoles={["Organizer"]} />}>

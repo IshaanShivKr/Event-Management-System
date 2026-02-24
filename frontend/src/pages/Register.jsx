@@ -1,8 +1,10 @@
-import { useState } from "react";
+import { useState, useContext } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import api, { getApiErrorMessage } from "../services/api";
+import { AuthContext } from "../context/AuthContext";
 
 function Register() {
+  const { login } = useContext(AuthContext);
   const navigate = useNavigate();
   const [form, setForm] = useState({
     email: "",
@@ -27,8 +29,14 @@ function Register() {
     setLoading(true);
 
     try {
-      await api.post("/auth/register", form);
-      navigate("/login");
+      const response = await api.post("/auth/register", form);
+      if (response.data.success) {
+        const { accessToken, refreshToken, role, user } = response.data.data;
+        login({ accessToken, refreshToken, role, user });
+
+        // Redirect to onboarding page instead of login
+        navigate("/participant/onboarding");
+      }
     } catch (err) {
       setError(getApiErrorMessage(err, "Registration failed"));
     } finally {

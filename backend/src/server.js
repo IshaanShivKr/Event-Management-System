@@ -6,6 +6,7 @@ import { Server } from "socket.io";
 import { connectDB } from "./config/db.js"
 import { PORT, FRONTEND_URL } from "./config/env.js";
 import { sendError } from "./utils/responseHandler.js";
+import { startCronJobs } from "./utils/cronJobs.js";
 
 import authRoutes from "./routes/authRoutes.js";
 import adminRoutes from "./routes/adminRoutes.js";
@@ -66,6 +67,7 @@ io.on("connection", (socket) => {
 async function startServer() {
     try {
         await connectDB();
+        startCronJobs();
         server.listen(PORT, () => {
             console.log("Server running on port:", PORT);
         });

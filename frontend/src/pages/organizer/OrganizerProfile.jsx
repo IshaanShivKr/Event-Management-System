@@ -34,8 +34,11 @@ function OrganizerProfile() {
   };
 
   const requestReset = async () => {
+    const reason = window.prompt("Please provide a reason for the password reset request:");
+    if (!reason) return; // Cancelled or empty string
+
     try {
-      await api.post("/users/request-reset", { reason: "Organizer reset request from profile" });
+      await api.post("/users/request-reset", { reason });
       alert("Password reset request sent to admin");
     } catch (err) {
       alert(getApiErrorMessage(err, "Failed to request reset"));
