@@ -23,6 +23,11 @@ if (!JWT_REFRESH_SECRET) {
 export const JWT_ACCESS_EXPIRATION = process.env.JWT_ACCESS_EXPIRATION || "15m";
 export const JWT_REFRESH_EXPIRATION = process.env.JWT_REFRESH_EXPIRATION || "7d";
 
+export const FRONTEND_URL = process.env.FRONTEND_URL;
+if (!FRONTEND_URL) {
+    throw new Error("Missing FRONTEND_URL");
+}
+
 // Optional SMTP settings used for ticket confirmation emails.
 export const SMTP_HOST = process.env.SMTP_HOST || "";
 export const SMTP_PORT = Number(process.env.SMTP_PORT || 587);
