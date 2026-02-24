@@ -1,0 +1,2 @@
+frontend_url: https://event-management-system-mu-seven.vercel.app/
+backend_url: https://event-management-system-n68w.onrender.com
